@@ -1,0 +1,930 @@
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  Text,
+  Button,
+  FlatList,
+  TouchableOpacity,
+  Alert,
+  Modal,
+  TouchableHighlight,
+  Image,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  BackHandler,
+  Dimensions,
+} from 'react-native';
+import {screenPop, screenPush, screenPushForce} from '../utils/NavigationUtil';
+
+import {SC} from '../utils/constants';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import {getPlainValue, getUserTheme} from '../storage/User';
+import NotificationApi from '../apis/Notifications';
+import {NavigationContainer} from '@react-navigation/native';
+import NotificationReadApi from '../apis/ReadNotification';
+import {useFocusEffect} from '@react-navigation/native';
+import Loader from '../containers/Loader';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {formatDate} from '../rnlil/packages/utils/DateUtil';
+
+const filterContents = ['All', 'Push', 'Post'];
+let dateArray = [];
+let dateArrayLast = [];
+var skip = 0;
+let apiParams: any = {};
+let comeFrom = '';
+const Notifications = ({route, navigation}: any) => {
+  let [NotificationData, setNotificationData] = useState<any>([]);
+  const [show, change] = React.useState(false);
+  const [indicator, setIndicator] = useState(false);
+  const [count, setCount] = useState({});
+  const [selectedFilter, setSelectedFilter] = useState('All');
+  const [category, changeCategory] = useState(false);
+  const userId = getPlainValue('user').id;
+
+  if (route.params && route.params.comeFrom) {
+    comeFrom = route.params.comeFrom;
+    route.params.comefrom = '';
+  }
+
+  useEffect(() => {
+    console.log('useEffect called');
+    apiParams = {};
+
+    NotificationData = [];
+    skip = 0;
+    getNotificationList({});
+  }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('useFocusEffect ');
+      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      //comefrom="";
+      //showBackButton(false);
+      if (selectedFilter == 'All') {
+        getNotificationList({});
+      }
+
+      return () => {
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+
+        console.log('******************* UNMOUNTED');
+
+        //backbtn=false;
+        //showBackButton;
+      };
+    }, []),
+  );
+
+  const onBackPress = () => {
+    console.log('onBackPress condition values ');
+    if (comeFrom) {
+      screenPop(navigation);
+      screenPop(navigation);
+
+      // comefrom="";
+      //showBackButton(false);
+
+      return true;
+    } else {
+      //comefrom="";
+      //console.log("useEffect false");
+      return false;
+    }
+  };
+
+  // useFocusEffect(
+  //   React.useCallback(() => {
+  //     console.log("useFocusEffect called");
+
+  //     //loadMore();
+  //   }, [skip,setNotificationData,setCount,setSelectedFilter,changeCategory]),
+  // );
+
+  const loadMore = async () => {
+    const obj = {
+      filter: {...apiParams},
+      skip: 0,
+      limit: 10,
+    };
+    const {data} = await NotificationApi.getNotificationCount(obj);
+    console.log('load more api call ', data.totalNotifications);
+    setCount(data.totalNotifications);
+  };
+
+  const getNotificationList = async (data: any) => {
+    console.log('getNotificationList skip ', skip, data);
+    const obj = {
+      filter: {...data},
+      skip: skip,
+      limit: 10,
+    };
+
+    setIndicator(true);
+
+    const dataList = await NotificationApi.getAssigmentList(obj);
+    const dataCount = await NotificationApi.getNotificationCount(obj);
+    console.log('getNotificationList ', dataList.length);
+    console.log('load more api call 134 ', dataCount.data.totalNotifications);
+    setCount(dataCount.data.totalNotifications);
+    // data.forEach((ele: any) => {
+    //   ele.date = new Date(ele.creationTime).toLocaleString('en-US', {
+    //     hour: 'numeric',
+    //     hour12: true,
+    //   });
+    //   if (!ele.isViewed) {
+    //     ele.isViewed = false;
+    //   }
+    // });
+    // const monthNames = [
+    //   'January ',
+    //   'February ',
+    //   'March ',
+    //   'April ',
+    //   'May ',
+    //   'June ',
+    //   'July ',
+    //   'August ',
+    //   'September ',
+    //   'October ',
+    //   'November ',
+    //   'December ',
+    // ];
+    dataList.data.forEach(ele => {
+      // ele.date =
+      //   new Date(ele.creationTime).getDate() +
+      //   ' ' +
+      //   monthNames[new Date(ele.creationTime).getMonth()] +
+      //   new Date(ele.creationTime).getFullYear() +
+      //   ',' +
+      //   ' ' +
+      //   new Date(ele.creationTime).toLocaleString('en-US', {
+      //     hour: 'numeric',
+      //     hour12: true,
+      //   });
+      ele.date =
+        formatDate(ele.creationTime, 'dd MMMM yyyy') +
+        ', ' +
+        formatDate(ele.creationTime, 'hh:mm a');
+
+      if (!ele.isViewed) {
+        ele.isViewed = false;
+      }
+    });
+    //console.log('jsfdgisudf=>>>', dataList.data, '<==dkvajdf');
+
+    setNotificationData([...NotificationData, ...dataList.data]);
+    setIndicator(false);
+  };
+
+  const getFirstWord = (name: String) => {
+    if (name) {
+      let matches = name && name.match(/\b(\w)/g);
+      const acronym = matches && matches.join('');
+      return acronym;
+    }
+  };
+
+  let themeDetail = getUserTheme();
+
+  const read = async (value: any) => {
+    console.log(' read function value ', value);
+    const {data} = await NotificationReadApi.readNotification({
+      systemNotificationId: value._id,
+      creationTime: new Date(Date.now()),
+      isArchived: false,
+    });
+    console.log('read api called data ', data);
+    if (value.type == 'post') {
+      AsyncStorage.setItem('screenFrom', 'notification');
+      navigation.navigate('Teacher Connect', {
+        screen: SC.GroupListingScreen,
+        comefrom: value.postId,
+      });
+    } else if (value.type == 'push') {
+      screenPush(navigation, SC.FullDisplay, {
+        passProps: {
+          item: value,
+        },
+      });
+    } else {
+      screenPush(navigation, SC.FullDisplay, {
+        passProps: {
+          item: value,
+        },
+      });
+    }
+  };
+
+  const handleLoadMore = () => {
+    console.log(
+      'sfjakldsghsjghskgsd : ',
+      count,
+      ' notification length  : ',
+      NotificationData.length,
+      apiParams,
+    );
+    if (count > NotificationData.length) {
+      skip = Number(skip) + Number(10);
+
+      // if(selectedFilter=="All"){
+      //   apiParams= {
+      //     "type":""
+      //   }
+      // }else{
+      //     apiParams= {
+      //       "type":selectedFilter
+      //     }
+
+      // }
+      console.log('handleLoadMore skip ', skip, apiParams);
+      loadMore();
+      getNotificationList(apiParams);
+    } else {
+      return null;
+    }
+  };
+
+  return (
+    <View
+      style={{
+        backgroundColor: 'white',
+        flex: 1,
+      }}>
+      <View style={{flexDirection: 'row'}}>
+        <View
+          style={{
+            marginTop: 10,
+            width: 45,
+            height: 45,
+          }}>
+          <TouchableOpacity
+            style={{alignSelf: 'center'}}
+            onPress={() => {
+              screenPop(navigation);
+              screenPop(navigation);
+            }}>
+            <Icon
+              name="chevron-left"
+              color="#000"
+              size={40}
+              style={styles.icon}
+            />
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.header}>Notifications</Text>
+        <View style={styles.filterView}>
+          {/* <TouchableOpacity
+            style={{alignSelf: 'center'}}
+            onPress={() => change(!show)}>
+            <Icon
+              name="dots-vertical"
+              color="#000"
+              size={30}
+              style={{marginHorizontal: 10}}
+            />
+          </TouchableOpacity> */}
+          <TouchableOpacity
+            style={{alignSelf: 'center'}}
+            onPress={() => changeCategory(!category)}>
+            <Icon
+              name="filter-variant"
+              color="#000"
+              size={30}
+              style={{marginHorizontal: -5}}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+      {NotificationData.length != 0 ? (
+        <View style={{flex: 1}}>
+          <View
+            style={{
+              marginLeft: '13%',
+              marginBottom: 5,
+              backgroundColor: themeDetail && themeDetail.bannerTextColor,
+              // width: 180,
+              padding: 3,
+              alignSelf: 'flex-start',
+              borderRadius: 100,
+              flexDirection: 'row',
+            }}>
+            <Text
+              style={{
+                color: '#fff',
+                // lineHeight: 30,
+                marginLeft: 5,
+                marginRight: 5,
+                fontWeight: 'bold',
+                // fontSize: 20,
+                alignSelf: 'flex-start',
+              }}>
+              {selectedFilter}
+            </Text>
+          </View>
+          <FlatList
+            keyExtractor={(item, index) => index.toString()}
+            style={{paddingTop: 10}}
+            data={NotificationData}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.8}
+            renderItem={({item, index}) => (
+              <View
+              // style={{borderColor: 'red', borderWidth: 2}}
+              >
+                {selectedFilter.toLowerCase() == item.type ? (
+                  <TouchableOpacity
+                    onPress={() => {
+                      read(item);
+                    }}
+                    style={{
+                      width: (Dimensions.get('screen').width * 90) / 100,
+                      height: (Dimensions.get('screen').height * 24) / 100,
+                      // borderColor: 'red',
+                      // borderWidth: 1,
+                      marginLeft: '5%',
+                      // padding: 7,
+                      // paddingLeft: 10,
+                    }}>
+                    <View style={{flexDirection: 'row'}}>
+                      <View
+                        style={{
+                          backgroundColor: themeDetail.bannerBGColor,
+                          width: 40,
+                          height: 40,
+                          borderRadius: 20,
+                          justifyContent: 'center',
+                          paddingBottom: 3,
+                          // margin: 10,
+                          // marginRight: 5,
+                        }}>
+                        {!item.isViewed ? (
+                          <View
+                            style={{
+                              width: 10,
+                              height: 10,
+                              borderRadius: 5,
+                              backgroundColor: 'red',
+                              borderColor: '#fff',
+                              borderWidth: 1,
+                              position: 'absolute',
+                              right: 0,
+                              top: 0,
+                              marginRight: 2,
+                              marginTop: 2,
+                            }}></View>
+                        ) : null}
+                        <Text
+                          numberOfLines={1}
+                          ellipsizeMode={'tail'}
+                          style={[
+                            styles.user,
+                            {
+                              color: '#fff',
+                              textAlign: 'center',
+                              textAlignVertical: 'center',
+                              fontSize: 20,
+                            },
+                          ]}>
+                          {getFirstWord(item && item.roleName)}
+                        </Text>
+                      </View>
+                      <View
+                        style={{
+                          // borderWidth: 1,
+                          // borderColor: 'grey',
+                          marginLeft: 10,
+                          height: 150,
+
+                          flex: 1,
+                        }}>
+                        <Text
+                          style={{
+                            fontSize: 16,
+                            //marginTop: 2,
+                            fontWeight: 'normal',
+                            // margin: 5,
+                            // marginTop: 3,
+                          }}>
+                          {item.type == 'post'
+                            ? 'Post Created By ' + item.userFirstName
+                            : item.userFirstName}
+                          {/* {index} */}
+                        </Text>
+                        <Text>{item.date}</Text>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            marginTop: 10,
+                            // borderColor: 'red',
+                            // borderWidth: 1,
+                            // flex: 1,
+                            height: 100,
+                          }}>
+                          <Text
+                            style={{
+                              // borderColor: 'green',
+                              // borderWidth: 1,
+                              flexGrow: 1,
+                              maxWidth: item.image ? '60%' : '100%',
+                              // // maxWidth: '60%',
+                              paddingRight: 10,
+                            }}
+                            numberOfLines={3}
+                            ellipsizeMode={'tail'}>
+                            {item.message}
+                          </Text>
+                          {item.image ? (
+                            <Image
+                              style={{
+                                flexGrow: 1,
+                                // maxWidth: '70%',
+                                // maxWidth:
+                                //   (Dimensions.get('screen').width * 40) / 100,
+                                height:
+                                  (Dimensions.get('screen').height * 10) / 100,
+
+                                // borderColor: 'pink',
+                                // borderWidth: 1,
+                                //flex: 1,
+                                // marginRight: 25,
+                                // alignSelf: 'flex-end',
+                              }}
+                              // resizeMode="contain"
+                              source={{uri: item.image}}
+                            />
+                          ) : null}
+                        </View>
+                      </View>
+                    </View>
+                    <Text numberOfLines={1} style={styles.borderStyle}></Text>
+                  </TouchableOpacity>
+                ) : selectedFilter == 'All' || selectedFilter == ' ' ? (
+                  <TouchableOpacity
+                    onPress={() => {
+                      read(item);
+                    }}
+                    style={{
+                      width: (Dimensions.get('screen').width * 90) / 100,
+                      height: (Dimensions.get('screen').height * 24) / 100,
+                      // borderColor: 'red',
+                      // borderWidth: 1,
+                      marginLeft: '5%',
+                      // padding: 7,
+                      // paddingLeft: 10,
+                    }}>
+                    <View style={{flexDirection: 'row'}}>
+                      <View
+                        style={{
+                          backgroundColor: themeDetail.bannerBGColor,
+                          width: 40,
+                          height: 40,
+                          borderRadius: 20,
+                          justifyContent: 'center',
+                          paddingBottom: 3,
+                          // margin: 10,
+                          // marginRight: 5,
+                        }}>
+                        {!item.isViewed ? (
+                          <View
+                            style={{
+                              width: 10,
+                              height: 10,
+                              borderRadius: 5,
+                              backgroundColor: 'red',
+                              borderColor: '#fff',
+                              borderWidth: 1,
+                              position: 'absolute',
+                              right: 0,
+                              top: 0,
+                              marginRight: 2,
+                              marginTop: 2,
+                            }}></View>
+                        ) : null}
+                        <Text
+                          numberOfLines={1}
+                          ellipsizeMode={'tail'}
+                          style={[
+                            styles.user,
+                            {
+                              color: '#fff',
+                              textAlign: 'center',
+                              textAlignVertical: 'center',
+                              fontSize: 20,
+                            },
+                          ]}>
+                          {getFirstWord(item && item.roleName)}
+                        </Text>
+                      </View>
+                      <View
+                        style={{
+                          // borderWidth: 1,
+                          // borderColor: 'grey',
+                          marginLeft: 10,
+                          height: 150,
+
+                          flex: 1,
+                        }}>
+                        <Text
+                          style={{
+                            fontSize: 16,
+                            //marginTop: 2,
+                            fontWeight: 'normal',
+                            // margin: 5,
+                            // marginTop: 3,
+                          }}>
+                          {item.type == 'post'
+                            ? 'Post Created By ' + item.userFirstName
+                            : item.userFirstName}
+                          {/* {index} */}
+                        </Text>
+                        <Text>{item.date}</Text>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            marginTop: 10,
+                            // borderColor: 'red',
+                            // borderWidth: 1,
+                            // flex: 1,
+                            height: 100,
+                          }}>
+                          <Text
+                            style={{
+                              // borderColor: 'green',
+                              // borderWidth: 1,
+                              flexGrow: 1,
+                              maxWidth: item.image ? '60%' : '100%',
+                              // // maxWidth: '60%',
+                              paddingRight: 10,
+                            }}
+                            numberOfLines={3}
+                            ellipsizeMode={'tail'}>
+                            {item.message}
+                          </Text>
+                          {item.image ? (
+                            <Image
+                              style={{
+                                flexGrow: 1,
+                                // maxWidth: '70%',
+                                // maxWidth:
+                                //   (Dimensions.get('screen').width * 40) / 100,
+                                height:
+                                  (Dimensions.get('screen').height * 10) / 100,
+
+                                // borderColor: 'pink',
+                                // borderWidth: 1,
+                                //flex: 1,
+                                // marginRight: 25,
+                                // alignSelf: 'flex-end',
+                              }}
+                              // resizeMode="contain"
+                              source={{uri: item.image}}
+                            />
+                          ) : null}
+                        </View>
+                      </View>
+                    </View>
+                    <Text numberOfLines={1} style={styles.borderStyle}></Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            )}
+          />
+        </View>
+      ) : (
+        <Text
+          style={{
+            textAlignVertical: 'center',
+            fontSize: 18,
+            flex: 1,
+            textAlign: 'center',
+            color: NotificationData.length != 0 ? 'black' : '#fff',
+          }}>
+          No Notifications
+        </Text>
+      )}
+      <Modal transparent={true} visible={show}>
+        <TouchableOpacity
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.3)',
+            maxWidth: '100%',
+          }}
+          onPress={() => change(false)}>
+          <View style={styles.message}>
+            <TouchableOpacity
+              onPress={() => change(!show)}
+              style={{padding: 5}}>
+              <Text style={{fontSize: 18}}>Message for Me</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                change(!show);
+                getNotificationList({sendBy: userId});
+              }}
+              style={{padding: 5}}>
+              <Text style={{fontSize: 18}}>Message by Me</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => change(!show)}
+              style={{padding: 5}}>
+              <Text style={{fontSize: 18}}>Generic Notification</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+      <Modal transparent={true} visible={indicator}>
+        <View style={styles.Indicator}>
+          <Loader />
+        </View>
+      </Modal>
+      <Modal
+        transparent={true}
+        visible={category}
+        animationType="slide"
+        onRequestClose={() => console.log('modal closed')}>
+        <View style={{flex: 1, backgroundColor: 'rgba(0,0,0,0.4)'}}>
+          <View style={styles.changeChar}>
+            <TouchableOpacity
+              onPress={() => changeCategory(false)}
+              style={{marginLeft: '85%', padding: 10}}>
+              <Icon name="close" color="#e54304" size={35} />
+            </TouchableOpacity>
+
+            <View
+              style={{
+                marginBottom: 30,
+              }}>
+              <Text style={styles.bottomFilterHeadingText}>
+                Notification Type
+              </Text>
+              <FlatList
+                keyExtractor={(item, index) => index.toString()}
+                style={{paddingTop: 0}}
+                data={filterContents}
+                renderItem={({item, index}) => (
+                  <TouchableOpacity
+                    style={{
+                      padding: 5,
+                    }}
+                    onPress={() => {
+                      changeCategory(false);
+                      skip = 0;
+                      if (index == 0) {
+                        setSelectedFilter('');
+                      } else if (index == 1) {
+                        setSelectedFilter('push');
+                      } else if (index == 2) {
+                        setSelectedFilter('post');
+                      }
+                      setSelectedFilter(item);
+                      if (index == 0) {
+                        apiParams = {
+                          type: '',
+                        };
+                      } else if (index == 1) {
+                        apiParams = {
+                          type: 'push',
+                        };
+                      } else if (index == 2) {
+                        apiParams = {
+                          type: 'post',
+                        };
+                      }
+                      NotificationData = [];
+                      getNotificationList(apiParams);
+                    }}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        flex: 1,
+                        backgroundColor:
+                          selectedFilter == item
+                            ? themeDetail.bannerBGColor
+                            : 'white',
+                        borderRadius: 20,
+                        paddingBottom: 10,
+                      }}>
+                      <Text
+                        style={[
+                          styles.listt,
+                          {
+                            fontWeight:
+                              selectedFilter == item ? 'bold' : 'normal',
+                            fontSize: selectedFilter == item ? 20 : 16,
+
+                            color: selectedFilter == item ? 'white' : 'black',
+                          },
+                        ]}>
+                        {item}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+};
+
+export default Notifications;
+const styles = StyleSheet.create({
+  borderStyle: {
+    width: '100%',
+    marginTop: 3,
+    marginBottom: 7,
+    // marginBottom: 10,
+    // marginLeft: '5%',
+    // marginRight: '5%',
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#D3D3D3',
+  },
+  description: {
+    width: '100%',
+    marginRight: 10,
+    textAlign: 'justify',
+    flex: 1,
+  },
+  status: {
+    width: 12,
+    height: 12,
+    backgroundColor: '#fff',
+    padding: 1,
+    borderRadius: 7,
+    position: 'absolute',
+    left: 30,
+    zIndex: 1,
+  },
+  statussub: {
+    flexDirection: 'row',
+    marginLeft: 20,
+    marginRight: 20,
+    marginTop: 10,
+    // borderWidth: 1,
+    // borderColor: 'red',
+    //flex: 1,
+  },
+  icon: {
+    flex: 1,
+    left: 10,
+    width: 50,
+    height: 50,
+  },
+  firstname: {
+    fontSize: 20,
+    textAlign: 'center',
+    color: '#fff',
+    flex: 1,
+    textAlignVertical: 'center',
+  },
+  msgview: {
+    width: '90%',
+    height: 90,
+    borderColor: 'red',
+    paddingTop: 5,
+    marginLeft: '20%',
+    paddingRight: 5,
+  },
+  ind: {
+    justifyContent: 'center',
+    alignSelf: 'center',
+    alignItems: 'center',
+    alignContent: 'center',
+    flex: 1,
+  },
+  footer: {
+    padding: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  loadMoreBtn: {
+    padding: 10,
+    backgroundColor: '#800000',
+    borderRadius: 4,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  btnText: {
+    color: 'white',
+    fontSize: 15,
+    textAlign: 'center',
+  },
+  notification: {
+    marginLeft: 10,
+    fontSize: 25,
+    alignSelf: 'center',
+  },
+  bold: {marginLeft: 20, fontSize: 18, fontWeight: 'bold'},
+  normal: {marginLeft: 20, fontSize: 18, fontWeight: 'normal'},
+  messagebold: {
+    width: '100%',
+    fontWeight: 'bold',
+    marginRight: 10,
+    textAlign: 'justify',
+    flex: 1,
+  },
+  messagenormal: {
+    width: '100%',
+    fontWeight: 'normal',
+    marginRight: 10,
+    marginLeft: 0,
+    textAlign: 'justify',
+    flex: 1,
+    lineHeight: 20,
+  },
+  img: {
+    width: '36%',
+    flexDirection: 'row-reverse',
+    height: 80,
+    left: 10,
+    flex: 1,
+    // marginRight: -5,
+  },
+  user: {
+    fontSize: 25,
+    textAlign: 'center',
+    color: '#fff',
+    marginTop: 2,
+  },
+  datebold: {marginLeft: 20, fontWeight: 'bold'},
+  datenormal: {marginLeft: 20, fontWeight: 'normal', marginTop: 3},
+  Indicator: {
+    flex: 1,
+    alignSelf: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bottomFilterHeadingText: {
+    width: '100%',
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: 20,
+  },
+  listt: {
+    textAlign: 'center',
+    fontSize: 16,
+    marginTop: 10,
+    width: '40%',
+    marginLeft: '30%',
+    alignSelf: 'center',
+  },
+  header: {
+    marginLeft: 10,
+    fontSize: 25,
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterView: {
+    flexDirection: 'row',
+    flex: 1,
+    justifyContent: 'flex-end',
+    margin: 10,
+    right: 15,
+  },
+  statusView: {
+    backgroundColor: 'red',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    alignSelf: 'center',
+  },
+  firstName: {
+    fontSize: 22,
+    textAlign: 'center',
+    color: '#fff',
+    //flex: 1,
+    //justifyContent: 'center',
+    // alignItems: 'center',
+    textAlignVertical: 'center',
+  },
+  changeChar: {
+    backgroundColor: 'white',
+    position: 'absolute',
+    width: '100%',
+    left: 0,
+    bottom: 0,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+  },
+  message: {
+    backgroundColor: '#ffffff',
+    margin: 50,
+    padding: 10,
+    width: '50%',
+    right: '-20%',
+    justifyContent: 'center',
+    top: '-1%',
+    borderRadius: 10,
+    borderTopRightRadius: 0,
+  },
+});
