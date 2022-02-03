@@ -1,0 +1,11 @@
+first name only 
+ 
+ {getFirstWord(item && item.roleName)}
+ 
+   const getFirstWord = (name: String) => {
+    if (name) {
+      let matches = name && name.match(/\b(\w)/g);
+      const acronym = matches && matches.join('');
+      return acronym;
+    }
+  };
