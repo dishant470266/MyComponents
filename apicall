@@ -1,0 +1,21 @@
+class component api call
+
+import BaseAPI from './base/BaseAPI';
+class NotificationApi extends BaseAPI {
+  constructor() {
+    super('/SystemNotifications');
+  }
+
+  getAssigmentList(body: any) {
+    console.log('jgjhjh', body, 'ffhfhgfhfjhfhfhfh');
+
+    return this.post(`getNotification`, body);
+  }
+
+  getNotificationCount(body: any) {
+    return this.post(`getNotificationCount`, body);
+  }
+}
+
+const instance = new NotificationApi();
+export default instance;
