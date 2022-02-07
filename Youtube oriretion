@@ -1,0 +1,23 @@
+import {
+  OrientationLocker,
+  PORTRAIT,
+  LANDSCAPE,
+  useDeviceOrientationChange,
+} from 'react-native-orientation-locker';
+import Orientation from 'react-native-orientation-locker';
+
+  const [oritent, setOrient] = useState(Orientation.getInitialOrientation());
+  
+  
+  useDeviceOrientationChange(o => {
+    // Handle device orientation change PORTRAIT  LANDSCAPE-LEFT
+
+    console.log('useDeviceOrientationChangeuseDeviceOrientationChange==> ', o);
+    if (o.includes('PORTRAIT')) {
+      setOrient(PORTRAIT);
+    } else if (o.includes('LANDSCAPE')) {
+      setOrient(LANDSCAPE);
+    }
+  });
+  
+   <OrientationLocker orientation={PORTRAIT} />
