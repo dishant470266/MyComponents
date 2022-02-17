@@ -1,0 +1,1 @@
+width: (Dimensions.get('screen').width * 90) / 100,
