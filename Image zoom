@@ -1,0 +1,16 @@
+     <ImageZoom
+                              cropWidth={Dimensions.get('screen').width}
+                              cropHeight={Dimensions.get('screen').height}
+                              imageWidth={Dimensions.get('screen').width}
+                              imageHeight={Dimensions.get('screen').height}
+                              style={{
+                                flex: 1,
+                                width: Dimensions.get('screen').width,
+                                height: Dimensions.get('screen').height,
+                                backgroundColor: 'white',
+                              }}>
+                              <Image
+                                resizeMode="contain"
+                                source={{uri: imag}}
+                                style={styles.modalImage}></Image>
+                            </ImageZoom>
