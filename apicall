@@ -19,3 +19,17 @@ class NotificationApi extends BaseAPI {
 
 const instance = new NotificationApi();
 export default instance;
+
+
+get type==>api
+  getUserTheme(gradeId: string) {
+    return this.get(`grades/userTheme?gradeId=${gradeId}`);
+  }
+  
+    getHighestGradeTheme() {
+    return this.get(`grades/userTheme`);
+  }
+  
+    getGroupsTemp(skip?: number, limit?: number) {
+    return this.get(`Groups/getUserLevelGroups?skip=${skip}&limit=${limit}`);
+  }
