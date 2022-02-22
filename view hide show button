@@ -1,0 +1,33 @@
+  const [range, setRange] = useState(12);
+  const [show, setShow] = useState(true);
+  const [memorylength, setMemoryLength] = useState(0);
+
+{show ? (
+                    <TouchableOpacity
+                      onPress={() => (
+                        setRange(range + 12),
+                        memorylength - 12 <= range ? setShow(false) : null
+                      )}
+                      style={{
+                        backgroundColor: themeDetail.bottomBar.bgColor,
+                        right: 15,
+                        alignSelf: 'flex-end',
+                        width: '25%',
+                        height: 40,
+                        borderRadius: 5,
+                        flex: 1,
+                      }}>
+                      <Text
+                        style={{
+                          textAlign: 'center',
+                          justifyContent: 'center',
+                          alignSelf: 'center',
+                          alignItems: 'center',
+                          textAlignVertical: 'center',
+                          flex: 1,
+                          color: '#fff',
+                        }}>
+                        View More
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null}
