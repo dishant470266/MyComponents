@@ -1,0 +1,29 @@
+    {count.totalunreadedNotifications > 0 ? (
+                        <View style={styles.bellstatus}></View>
+                      ) : null}
+                      
+                      
+     const functio = async () => {
+    const obj = {
+      filter: {},
+      skip: 0,
+      limit: 10,
+    };
+    const dataList1: any = await NotificationApi.getNotificationCount(obj);
+    setCount(dataList1.data.totalNotifications);
+  };
+  
+  
+  setNotificationData([...NotificationData, ...data]);
+  const [NotificationData, setNotificationData] = useState<any>([]);
+  const handleLoadMore = () => {
+    if (count != NotificationData.length) {
+      skip += 10;
+      getNotificationList();
+    } else {
+      return null;
+    }
+  };
+onEndReached={handleLoadMore}
+onEndReachedThreshold={0}
+
