@@ -33,3 +33,33 @@ get type==>api
     getGroupsTemp(skip?: number, limit?: number) {
     return this.get(`Groups/getUserLevelGroups?skip=${skip}&limit=${limit}`);
   }
+
+
+-------------------------------------------------
+Api call in componneny
+post
+
+  const getClassMemory = async (ob: any) => {
+    try {
+      const obj = {
+        endDate: ob.endDate,
+        startDate: ob.startDate,
+        skip: 0,
+        limit: 100,
+      };
+
+      setIndicator(true);
+
+      const dataList = await ClassMemorieesApi.getClassMemories(obj);
+      setMemory(dataList.data.result);
+      setMemoryLength(dataList.data.result.length);
+
+      dataList.data.result.forEach(ele => {
+        ele.date = formatDate(ele.creationTime, 'dd-MMM-yy');
+      });
+      setIndicator(false);
+    } catch (error) {
+      setIndicator(false);
+      console.log(error, 'errorerrorerrorerror');
+    }
+  };
