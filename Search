@@ -1,0 +1,33 @@
+  const searchFilterFunction = (text) => {
+    if (text) {
+      const newData = data.filter(function (item) {
+        const itemData = item.state
+          ? item.state.toUpperCase()
+          : "".toUpperCase();
+        const textData = text.toUpperCase();
+        return itemData.indexOf(textData) > -1;
+      });
+      setFilteredDataSource(newData);
+      setSearch(text);
+    } else {
+      setFilteredDataSource(data);
+      setSearch(text);
+    }
+  };
+  
+    const [search, setSearch] = useState("");
+  const [filteredDataSource, setFilteredDataSource] = useState([]);
+  
+        <TextInput
+        style={styles.textInputStyle}
+        onChangeText={(text) => searchFilterFunction(text)}
+        value={search}
+        underlineColorAndroid="transparent"
+        placeholder="Search Here"
+      />
+      
+              <FlatList
+          data={filteredDataSource}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <CardScreen item={item} />}
+        />
