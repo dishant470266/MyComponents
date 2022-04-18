@@ -1,0 +1,11 @@
+  const storeData = async () => {
+    try {
+      const obj = data.find(item => item.id === selected);
+      await AsyncStorage.setItem('key1', JSON.stringify(obj));
+      let opo = await AsyncStorage.getItem('key1');
+      console.log(JSON.parse(opo), 'adfuasddbdbjdc');
+    } catch (error) {
+      // Error saving data
+      console.log(error);
+    }
+  };
