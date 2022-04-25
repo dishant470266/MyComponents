@@ -1,0 +1,9 @@
+  const Capitalize = (str: any) => {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  };
+  
+      <Text style={[styles.colorWhite, styles.fs18, styles.fsBold]}>
+                  {assessmentType === 1
+                    ? 'CYP'
+                    : courseType(Capitalize(assignmentType))}
+                </Text>
