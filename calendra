@@ -1,0 +1,200 @@
+import {
+  Dimensions,
+  ImageBackground,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import React, {useState} from 'react';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import Icon from 'react-native-vector-icons/Octicons';
+import LinearGradient from 'react-native-linear-gradient';
+
+const Personal = () => {
+  const [date, setDate] = useState(new Date());
+  const [show, setShow] = useState(false);
+  const [dateGot, setDateGot] = useState('Select Date');
+
+  const onChange = (event: any, selectedDate: string | number | Date) => {
+    const currentDate = selectedDate;
+    const d: any = new Date(selectedDate).toLocaleDateString('en-us', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    });
+    const t: any = new Date(selectedDate).toLocaleTimeString('en-us');
+    setDateGot(d);
+    setShow(false);
+    setDate(currentDate);
+  };
+  return (
+    <ImageBackground
+      resizeMode="cover"
+      source={require('../../../../Assest/PageBG.jpg')}
+      style={{
+        // height: Dimensions.get('screen').height,
+        height: '100%',
+        justifyContent: 'space-around',
+      }}>
+      <View>
+        <View style={styles.inputcontainer}>
+          <Text
+            style={{
+              color: '#91B2F7',
+              fontSize: 12,
+              marginBottom: 5,
+              fontStyle: 'italic',
+            }}>
+            Full Name
+          </Text>
+          <TextInput
+            style={styles.input1}
+            placeholderTextColor="#C384F8"
+            placeholder="Faseeh"
+          />
+        </View>
+        <View style={styles.inputcontainer}>
+          <Text
+            style={{
+              color: '#91B2F7',
+              fontSize: 12,
+              marginBottom: 5,
+              fontStyle: 'italic',
+            }}>
+            Email Address
+          </Text>
+          <TextInput
+            style={styles.input1}
+            placeholderTextColor="#C384F8"
+            placeholder="Faseeh@gmail.com"
+            keyboardType="email-address"
+          />
+        </View>
+        <View style={styles.inputcontainer}>
+          <Text
+            style={{
+              color: '#91B2F7',
+              fontSize: 12,
+              marginBottom: 5,
+              fontStyle: 'italic',
+            }}>
+            Mobile No.
+          </Text>
+          <TextInput
+            style={styles.input1}
+            placeholderTextColor="#C384F8"
+            placeholder="000-000-0000"
+            keyboardType="numeric"
+          />
+        </View>
+        <View style={styles.inputcontainer}>
+          <Text
+            style={{
+              color: '#91B2F7',
+              fontSize: 12,
+              marginBottom: 5,
+              fontStyle: 'italic',
+            }}>
+            Date of Birth
+          </Text>
+          <TouchableOpacity
+            onPress={() => setShow(true)}
+            style={[
+              {
+                width: Dimensions.get('screen').width / 1.3,
+                backgroundColor: 'rgba(192,192,192,0.4)',
+                height: (Dimensions.get('screen').height * 5) / 100,
+                borderRadius: 3,
+              },
+              {flexDirection: 'row'},
+            ]}>
+            <Icon
+              name="calendar"
+              size={17}
+              color={'#C384F8'}
+              style={{alignSelf: 'center', marginLeft: 10}}
+            />
+            <Text
+              style={{
+                color: '#C384F8',
+                fontSize: 17,
+                alignSelf: 'center',
+                marginLeft: 10,
+                textAlign: 'center',
+              }}>
+              {/* 18/08/1995 */}
+              {dateGot}
+            </Text>
+            <View style={{flexDirection: 'row-reverse', flex: 1}}>
+              <Icon
+                name="chevron-down"
+                size={22}
+                color={'#C384F8'}
+                style={{
+                  alignSelf: 'center',
+                  marginRight: 10,
+                }}
+              />
+            </View>
+          </TouchableOpacity>
+          {show && (
+            <DateTimePicker
+              testID="dateTimePicker"
+              value={date}
+              mode={'date'}
+              is24Hour={true}
+              onChange={onChange}
+            />
+          )}
+        </View>
+      </View>
+      <LinearGradient colors={['#030F18', '#004A82']} style={styles.flashView}>
+        <Text style={styles.AcceptText}>SAVE</Text>
+      </LinearGradient>
+    </ImageBackground>
+  );
+};
+
+export default Personal;
+
+const styles = StyleSheet.create({
+  input1: {
+    width: Dimensions.get('screen').width / 1.3,
+    height: (Dimensions.get('screen').height * 5) / 100,
+    padding: 10,
+    // borderRadius: 10,
+    backgroundColor: 'rgba(192,192,192,0.4)',
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+    fontStyle: 'italic',
+    borderRadius: 3,
+  },
+  inputcontainer: {
+    marginVertical: 10,
+    alignSelf: 'center',
+  },
+  flashView: {
+    padding: 14,
+    width: Dimensions.get('screen').width * 0.55,
+    height: (Dimensions.get('screen').height * 7) / 100,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+  },
+  AcceptText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    fontStyle: 'italic',
+    // borderWidth: 1,
+    // borderColor: 'red',
+    fontFamily: 'BarlowCondensed-Bold',
+    borderWidth: 2,
+    borderColor: 'transparent',
+    alignSelf: 'center',
+    color: '#fff',
+  },
+});
