@@ -1,0 +1,319 @@
+import {
+  Alert,
+  Dimensions,
+  FlatList,
+  ImageBackground,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import React, {useState} from 'react';
+import Icon from 'react-native-vector-icons/Octicons';
+import LinearGradient from 'react-native-linear-gradient';
+
+const Family = () => {
+  const [grade, setGrade] = useState([
+    {id: 1, name: '1st'},
+    {id: 2, name: '2nd'},
+    {id: 3, name: '3rd'},
+    {id: 4, name: '4th'},
+    {id: 5, name: '5th'},
+    {id: 6, name: '6th'},
+    {id: 7, name: '7th'},
+    {id: 8, name: '8th'},
+    {id: 9, name: '9th'},
+    {id: 10, name: '10th'},
+    {id: 11, name: '11th'},
+    {id: 12, name: '12th'},
+  ]);
+  const [Section, setSection] = useState([
+    {id: 1, name: 'Section A'},
+    {id: 2, name: 'Section B'},
+    {id: 3, name: 'Section C'},
+    {id: 4, name: 'Section D'},
+    {id: 5, name: 'Section E'},
+    {id: 6, name: 'Section F'},
+    {id: 7, name: 'Section G'},
+  ]);
+  const [schoolList, setSchoolList] = useState([
+    {id: 1, name: 'School 1'},
+    {id: 2, name: 'School 2'},
+    {id: 3, name: 'School 3'},
+    {id: 4, name: 'School 4'},
+    {id: 5, name: 'School 5'},
+    {id: 6, name: 'School 6'},
+    {id: 7, name: 'School 7'},
+    {id: 8, name: 'School 8'},
+    {id: 9, name: 'School 9'},
+    {id: 10, name: 'School 10'},
+    {id: 11, name: 'School 11'},
+    {id: 12, name: 'School 12'},
+  ]);
+  const [DATA, setDATA] = useState([]);
+  const [listName, setListName] = useState('');
+  const [selectedGrade, setSelectedGrade] = useState(grade[0]);
+  const [selectedSchool, setSelectedSchool] = useState(schoolList[0]);
+  const [selectedSection, setSelectedSection] = useState(Section[0]);
+  const [date, setDate] = useState(new Date());
+  const [show, setShow] = useState(false);
+  const [dateGot, setDateGot] = useState('Select Date');
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const onChange = (event: any, selectedDate: string | number | Date) => {
+    const currentDate = selectedDate;
+    const d: any = new Date(selectedDate).toLocaleDateString('en-us', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    });
+    const t: any = new Date(selectedDate).toLocaleTimeString('en-us');
+    setDateGot(d);
+    setShow(false);
+    setDate(currentDate);
+  };
+  return (
+    <ImageBackground
+      resizeMode="cover"
+      source={require('../../../../Assest/PageBG.jpg')}
+      style={{
+        // height: Dimensions.get('screen').height,
+        height: '100%',
+        justifyContent: 'space-around',
+      }}>
+      <View>
+        <View style={styles.inputcontainer}>
+          <Text
+            style={{
+              color: '#91B2F7',
+              fontSize: 12,
+              marginBottom: 5,
+              fontStyle: 'italic',
+            }}>
+            Current School
+          </Text>
+          <TextInput
+            editable={!modalVisible}
+            style={styles.input1}
+            placeholderTextColor="#C384F8"
+            placeholder="ST. Xaviers, School"
+          />
+        </View>
+        <View style={styles.inputcontainer}>
+          <Text
+            style={{
+              color: '#91B2F7',
+              fontSize: 12,
+              marginBottom: 5,
+              fontStyle: 'italic',
+            }}>
+            Grade
+          </Text>
+          <TouchableOpacity
+            onPress={() => {
+              setListName('grade');
+              setDATA(grade);
+              setModalVisible(true);
+            }}
+            style={{...styles.input1, flexDirection: 'row'}}>
+            <Text
+              style={{
+                width: '92.5%',
+                height: (Dimensions.get('screen').height * 5) / 100,
+                textAlignVertical: 'center',
+                // padding: 10,
+                // borderRadius: 10,
+                // backgroundColor: 'rgba(192,192,192,0.4)',
+                color: '#C384F8',
+                fontSize: 14,
+                fontWeight: 'bold',
+                fontStyle: 'italic',
+              }}>
+              {selectedGrade.name}{' '}
+            </Text>
+            <Icon
+              name="chevron-down"
+              size={22}
+              color={'#C384F8'}
+              style={{
+                alignSelf: 'center',
+                marginRight: 10,
+              }}
+            />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.inputcontainer}>
+          <Text
+            style={{
+              color: '#91B2F7',
+              fontSize: 12,
+              marginBottom: 5,
+              fontStyle: 'italic',
+            }}>
+            Section
+          </Text>
+          <TouchableOpacity
+            onPress={() => {
+              setListName('section');
+              setDATA(Section);
+              setModalVisible(true);
+            }}
+            style={{...styles.input1, flexDirection: 'row'}}>
+            <Text
+              style={{
+                width: '92.5%',
+                height: (Dimensions.get('screen').height * 5) / 100,
+                textAlignVertical: 'center',
+                color: '#C384F8',
+                fontSize: 14,
+                fontWeight: 'bold',
+                fontStyle: 'italic',
+              }}>
+              {selectedSection.name}
+            </Text>
+            <Icon
+              name="chevron-down"
+              size={22}
+              color={'#C384F8'}
+              style={{
+                alignSelf: 'center',
+                marginRight: 10,
+              }}
+            />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.inputcontainer}>
+          <Text
+            style={{
+              color: '#91B2F7',
+              fontSize: 12,
+              marginBottom: 5,
+              fontStyle: 'italic',
+            }}>
+            Previous School
+          </Text>
+          <TouchableOpacity
+            onPress={() => {
+              setListName('school');
+              setDATA(schoolList);
+              setModalVisible(true);
+            }}
+            style={{
+              ...styles.input1,
+              flexDirection: 'row',
+            }}>
+            <Text
+              style={{
+                width: '92.5%',
+                height: (Dimensions.get('screen').height * 5) / 100,
+                textAlignVertical: 'center',
+                color: '#C384F8',
+                fontSize: 14,
+                fontWeight: 'bold',
+                fontStyle: 'italic',
+              }}>
+              {selectedSchool.name}
+            </Text>
+            <Icon
+              name="chevron-down"
+              size={22}
+              color={'#C384F8'}
+              style={{
+                alignSelf: 'center',
+                marginRight: 10,
+              }}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+      <LinearGradient colors={['#030F18', '#004A82']} style={styles.flashView}>
+        <Text style={styles.AcceptText}>SAVE</Text>
+      </LinearGradient>
+      {modalVisible ? (
+        <View style={styles.modalView}>
+          <Text style={styles.modalHeader}>Select Grade</Text>
+          <FlatList
+            data={DATA}
+            renderItem={({item, index}) => (
+              <TouchableOpacity
+                onPress={() => {
+                  if (listName == 'grade') setSelectedGrade(item);
+                  else if (listName == 'section') setSelectedSection(item);
+                  else setSelectedSchool(item);
+                  setModalVisible(false);
+                }}>
+                <Text style={{color: '#000', alignSelf: 'center'}}>
+                  {item.name}
+                </Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      ) : null}
+    </ImageBackground>
+  );
+};
+
+export default Family;
+
+const styles = StyleSheet.create({
+  input1: {
+    width: Dimensions.get('screen').width / 1.3,
+    height: (Dimensions.get('screen').height * 5) / 100,
+    // padding: 10,
+    borderRadius: 3,
+    paddingLeft: 10,
+    backgroundColor: 'rgba(192,192,192,0.4)',
+    color: '#C384F8',
+    fontSize: 14,
+    fontWeight: 'bold',
+    fontStyle: 'italic',
+  },
+  inputcontainer: {
+    marginVertical: 10,
+    alignSelf: 'center',
+  },
+  flashView: {
+    padding: 14,
+    width: Dimensions.get('screen').width * 0.55,
+    height: (Dimensions.get('screen').height * 7) / 100,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+  },
+  AcceptText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    fontStyle: 'italic',
+    fontFamily: 'BarlowCondensed-Bold',
+    borderWidth: 2,
+    borderColor: 'transparent',
+    alignSelf: 'center',
+    color: '#fff',
+  },
+
+  modalView: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    position: 'absolute',
+    width: Dimensions.get('screen').width,
+    height: (Dimensions.get('screen').height * 30) / 100,
+    bottom: 0,
+    // flex: 1,
+    borderWidth: 0.5,
+    paddingTop: 10,
+    borderColor: 'red',
+    borderTopRightRadius: 10,
+    borderTopLeftRadius: 10,
+  },
+  modalHeader: {
+    fontWeight: 'bold',
+    color: '#E01C6A',
+    textAlign: 'center',
+    fontSize: 22,
+    marginBottom: 10,
+  },
+});
