@@ -1,0 +1,161 @@
+import {
+  StyleSheet,
+  Text,
+  View,
+  FlatList,
+  TouchableOpacity,
+  Dimensions,
+  Image,
+  ImageBackground,
+  ToastAndroid,
+} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import LinearGradient from 'react-native-linear-gradient';
+import Ripple from 'react-native-material-ripple';
+import Card from '../CardComponent/Card';
+import styles from './styles';
+
+const PlayerList = ({data, navigation}: any) => {
+  const [clicked, setClicked] = useState(false);
+  var [arr, setArr] = useState([]);
+  const [watingLobia, setWatingLobia] = useState([]);
+
+  const getData = () => {
+    const temp = [];
+    for (var i in arr) {
+      temp.push(data[i]);
+    }
+    if (!temp.length) {
+      ToastAndroid.showWithGravity(
+        'Please select atleast one Player',
+        ToastAndroid.SHORT,
+        ToastAndroid.CENTER,
+      );
+    } else {
+      navigation.navigate('WatingLobia', {temp});
+    }
+  };
+
+  const handleCallBack = (indexx: any) => {
+    for (var i in arr) {
+      console.log(i, 'i');
+    }
+    arr.includes(indexx) ? removeItem(indexx) : addItem(indexx);
+  };
+  function removeItem(i: any) {
+    arr.splice(arr.indexOf(Number(i)), 1);
+    console.log(arr);
+  }
+  function addItem(i: any) {
+    arr.push(Number(i));
+    console.log(arr);
+  }
+  const selectAll = () => {
+    // Alert.alert('as');
+    setArr([]);
+    let arr = [];
+    for (let i = 0; i < data.length; i++) {
+      // console.log('asd', typeof i);
+
+      arr.push(i);
+    }
+    // console.log('arr', arr);
+    setArr([...arr]);
+  };
+
+  const renderItem = ({item, index}: any) => (
+    <View
+      style={[
+        {
+          flexDirection: 'row',
+          width: Dimensions.get('screen').width * 0.95,
+          marginLeft: Dimensions.get('screen').width * 0.025,
+        },
+      ]}>
+      <Card
+        item={item}
+        arr={arr}
+        index={index}
+        parentCallBack={handleCallBack}
+      />
+      <TouchableOpacity
+        onPress={() => (
+          setClicked(!clicked),
+          arr.includes(index)
+            ? arr.splice(arr.indexOf(index), 1)
+            : setArr([...arr, index]),
+          console.log('group==>', arr)
+        )}
+        style={{
+          marginTop: (Dimensions.get('screen').height * 1.2) / 100,
+          right: 3,
+          borderColor: 'green',
+          position: 'absolute',
+        }}>
+        {arr.includes(index) ? (
+          <ImageBackground
+            source={require('../../../../../Assest/BackGround/selectedRect.png')}
+            style={styles.bgImg}
+            resizeMode="contain">
+            <View
+              style={{
+                alignSelf: 'center',
+              }}>
+              <Icon name="check" size={30} style={styles.checkIcon} />
+            </View>
+          </ImageBackground>
+        ) : (
+          <ImageBackground
+            source={require('../../../../../Assest/BackGround/PlayerCut.png')}
+            style={styles.bgImg}
+            resizeMode="contain">
+            <View
+              style={{
+                alignSelf: 'center',
+              }}>
+              <Icon name="plus" size={30} style={styles.plusIcon} />
+            </View>
+          </ImageBackground>
+        )}
+      </TouchableOpacity>
+    </View>
+  );
+  return (
+    <View style={styles.mainView}>
+      <View style={styles.mainView2}>
+        <Text style={styles.mainTitle}>INVITE PLAYERS</Text>
+        <TouchableOpacity activeOpacity={0.5} onPress={() => selectAll()}>
+          <LinearGradient colors={['#FFDD65', '#F59655']} style={styles.linear}>
+            <Text style={styles.showText}>Select all</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+      <View
+        style={{
+          height: (Dimensions.get('screen').height * 65) / 100,
+        }}>
+        <FlatList
+          data={data}
+          renderItem={renderItem}
+          // keyExtractor={item => item.id}
+        />
+      </View>
+      <Ripple
+        rippleColor="#FF8B1A"
+        rippleDuration={300}
+        rippleOpacity={0.9}
+        rippleContainerBorderRadius={10}
+        onPress={() => getData()}
+        style={styles.btn}>
+        <LinearGradient
+          colors={['#F9C70C', '#FF8B1A']}
+          style={styles.flashView}>
+          <Text style={styles.AcceptText}>CHALLENGE</Text>
+        </LinearGradient>
+      </Ripple>
+    </View>
+  );
+};
+
+export default PlayerList;
