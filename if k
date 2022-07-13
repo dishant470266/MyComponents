@@ -1,0 +1,3 @@
+    {item.activeMembers >= 1000
+                  ? parseFloat(item.activeMembers / 1000) + 'K'
+                  : item.activeMembers}{' '}
