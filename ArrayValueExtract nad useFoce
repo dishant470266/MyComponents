@@ -1,0 +1,14 @@
+  useFocusEffect(
+    React.useCallback(() => {
+      fun1();
+    }, []),
+  );
+  const fun1 = async () => {
+    const id = await Store.getData('AvatarImg');
+    data.forEach((item: any) => {
+      if (item.id === id) {
+        setImgUrl(item.Image);
+        console.log(item.Image, 'item>>>Image');
+      }
+    });
+  };
