@@ -1,0 +1,73 @@
+import Modal from 'react-native-modal';
+ 
+ 
+ <Modal
+      isVisible={props.filterOpen}
+      animationIn={'slideInUp'}
+      animationOut={'slideOutDown'}
+      backdropOpacity={0.6}
+      // onBackdropPress={() => programSwitchCancelCall()}
+      onBackButtonPress={() => props.filterClose()}
+      >
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <Pressable
+                style={[styles.button, styles.buttonClose]}
+                onPress={() => props.filterClose()}>
+                <Text style={styles.textStyle}>Hide Modal</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+        
+        
+  centeredView: {
+    top: (Dimensions.get('screen').height) / 2 - (Dimensions.get('screen').height * 49) / 100 / 2,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    width: Dimensions.get('window').width,
+  },
+  modalView: {
+    // margin: 20,
+    backgroundColor: 'white',
+    width: Dimensions.get('screen').width,
+    height: (Dimensions.get('screen').height * 40) / 100,
+    // borderRadius: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 35,
+    // bottom:0,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  button: {
+    borderRadius: 20,
+    padding: 10,
+    elevation: 2,
+  },
+  buttonOpen: {
+    backgroundColor: '#F194FF',
+  },
+  buttonClose: {
+    backgroundColor: '#2196F3',
+  },
+  textStyle: {
+    color: 'white',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+        
+        
