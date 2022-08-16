@@ -1,0 +1,30 @@
+  filterClose: any;
+  tabTitle: string;
+  filterOpen: boolean;
+  item: number;
+  data: {
+    id: number;
+    // tabTitle: any;
+    games: any;
+  };
+  
+  <TouchableOpacity onPress={() => props.filterClose()}>
+                  <Icon name="close" size={35} color={'red'} />
+                </TouchableOpacity>
+                
+                
+parent screen
+        <View style={styles.viewTop}>
+          {newGames ? <PopulareComponent data={newGames} tabTitle={playNewGame} filterOpen={openfilter} filterClose={filterClose}/> : null}
+        </View>
+        
+   const filterOpen = ()=>{
+     setOpenfilter(true);
+     console.log("i am in filter open");
+     
+  }
+
+  const filterClose = ()=>{
+    setOpenfilter(false);
+    console.log("i am in filter close");
+  }
