@@ -1,0 +1,301 @@
+Alert android compoent
+import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import Modal from 'react-native-modal';
+import { Button } from 'react-native-elements';
+
+const AlertAndroid = ({ show }) => {
+  const [more, setMore] = useState(false);
+  console.log('AlertAndrooid show ', show);
+
+  function toggleModal() {
+    Linking.openURL(
+      'https://play.google.com/store/apps/details?id=in.securelearning.lil.android.app.questmaster'
+    );
+  }
+  return (
+    <Modal useNativeDriver={true} isVisible={show}>
+      <View style={{ backgroundColor: '#fff', borderRadius: 10, padding: 10 }}>
+        <ScrollView>
+          <View style={{ marginVertical: 10 }}>
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: '600',
+                marginBottom: 10,
+                textDecorationLine: 'underline',
+                textAlign: 'center'
+              }}
+            >
+              Update Available
+            </Text>
+            <Text style={{ fontSize: 18 }}>
+              A update is available to download. Please update the app for
+              better experience.
+            </Text>
+          </View>
+
+          <Button title="Update" onPress={toggleModal} />
+          <Button
+            title="Facing problem in updating app?"
+            type="clear"
+            onPress={() => setMore(!more)}
+          />
+
+          {more && (
+            <View style={{}}>
+              <Text style={{ fontWeight: 'bold', fontSize: 16 }}>
+                Facing Problem in Updating App. Follow below steps:
+              </Text>
+              <Text style={styles.facingText}>
+                1. Try to clear Google PlayStore cache on your device. If you
+                are finding problem in clearing cache, pls visit this link{' '}
+                <Text
+                  style={{ color: 'blue' }}
+                  onPress={() =>
+                    Linking.openURL(
+                      'https://support.google.com/googleplay/answer/7513003'
+                    )
+                  }
+                >
+                  https://support.google.com/googleplay/answer/7513003
+                </Text>
+              </Text>
+              <Text style={styles.facingText}>
+                2. Sometimes, after publishing app Update in Google PlayStore,
+                it takes some time in reflecting the Update depending on the
+                update in respective Google CDN. So you may pls check after some
+                time.
+              </Text>
+              <Text style={styles.facingText}>
+                3. Pls update Google PlayStore Notification setting for
+                receiving updates. You may Update app after receiving the Argus
+                Junior Update notification.
+              </Text>
+              <Text style={styles.facingText}>
+                4. Till the Update button is activated in Google PlayStore, you
+                may login to Argus Junior from your Laptop browser.
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+      </View>
+    </Modal>
+  );
+};
+
+export default AlertAndroid;
+
+const styles = StyleSheet.create({
+  facingText: { marginVertical: 10 },
+  btn: { color: 'blue' }
+});
+
+
+ios update component
+import {
+  Linking,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import React, { useState } from 'react';
+import Modal from 'react-native-modal';
+import { Button } from 'react-native-elements';
+
+const Alert = ({ show }: any) => {
+  const [more, setMore] = useState(false);
+  function toggleModal() {
+    Linking.openURL('https://apps.apple.com/in/app/argus-junior/id1527274791');
+  }
+  return (
+    <Modal useNativeDriver isVisible={show}>
+      <View style={{ backgroundColor: '#fff', borderRadius: 10, padding: 10 }}>
+        <View style={{ marginVertical: 10 }}>
+          <Text
+            style={{
+              fontSize: 20,
+              fontWeight: '600',
+              marginBottom: 10,
+              textDecorationLine: 'underline',
+              textAlign: 'center'
+            }}
+          >
+            Update Available
+          </Text>
+          <Text style={{ fontSize: 18 }}>
+            A update is available to download. Please update the app for better
+            experience.
+          </Text>
+        </View>
+
+        <Button title="Update" onPress={toggleModal} />
+        <Button
+          title="Facing problem in updating app?"
+          type="clear"
+          onPress={() => setMore(!more)}
+        />
+
+        {more && (
+          <View style={{}}>
+            <Text style={{ fontWeight: 'bold', fontSize: 16 }}>
+              Facing Problem in Updating App. Follow below steps:
+            </Text>
+            <Text style={styles.facingText}>
+              1. Try checking App update on AppStore, please visit this link{' '}
+              <TouchableOpacity
+                style={styles.btn}
+                onPress={() =>
+                  Linking.openURL('https://support.apple.com/en-in/HT207165')
+                }
+              >
+                https://support.apple.com/en-in/HT207165
+              </TouchableOpacity>
+            </Text>
+            <Text style={styles.facingText}>
+              2. Sometimes, after publishing app Update in AppStore, it takes
+              some time in reflecting the Update depending on the update in
+              respective Apple CDN. So you may please check after some time.
+            </Text>
+            <Text style={styles.facingText}>
+              3. Till the Update button is activated in AppStore, you may login
+              to Argus Junior from your Laptop browser.
+            </Text>
+          </View>
+        )}
+      </View>
+    </Modal>
+  );
+};
+
+export default Alert;
+
+const styles = StyleSheet.create({
+  facingText: { marginVertical: 10 },
+  btn: { color: 'blue' }
+});
+
+index.js
+
+/* eslint-disable radix */
+import axios from 'axios';
+import * as React from 'react';
+import { useState } from 'react';
+import { Platform, StatusBar } from 'react-native';
+import DeviceInfo from 'react-native-device-info';
+import FlashMessage from 'react-native-flash-message';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import Loader from './components/Loader';
+import RegsiterScreens from './utilities/registerScreens';
+import AlertAndroid from './components/AlertAndroid';
+import Alert from './components/Alert';
+import { checkVersion } from 'react-native-check-version';
+
+// interface InitAppProps {}
+// const InitApp = (props: InitAppProps) => {
+const InitApp = () => {
+  const [isLatest, setIsLatest] = useState(false);
+  const [isAndroidNew, setIsAndroidNew] = useState(false);
+
+  React.useEffect(() => {
+    async function checkIOSPublishedVersion() {
+      let latest = false;
+      if (Platform.OS === 'android') {
+        latest = true;
+      } else {
+        try {
+          // const { data } = await axios.get(
+          //   `http://itunes.apple.com/lookup?bundleId=${DeviceInfo.getBundleId()}`
+          // );
+          // console.log('res--', data?.results[0].version);
+          // let appStoreVer = data.results[0].version
+          //   .split('.')
+          //   .map((d: string) => parseInt(d));
+          const installedVer = DeviceInfo.getVersion()
+            .split('.')
+            .map((d) => parseInt(d));
+
+          // if (appStoreVer[0] >= installedVer[0]) {
+          //   if (appStoreVer[1] > installedVer[1]) {
+          //     latest = true;
+          //   }
+          // } else if (appStoreVer[1] > installedVer[1]) {
+          //   latest = false;
+          // } else {
+          //   latest = false;
+          // }
+        } catch (err) {
+          console.log('appstore err', err);
+          latest = true;
+        }
+      }
+
+      // console.log('latestIos-----------------', latest);
+
+      setIsLatest(latest);
+    }
+
+    async function checkAndroidPublishedVersion() {
+      let isNeedUpdate = false;
+
+      try {
+        const playStoreInfo = await checkVersion();
+        const playStoreVersion = playStoreInfo.version;
+        console.log('playStoreVersion-----------------', playStoreVersion);
+
+        const installedVersion = DeviceInfo.getVersion();
+        console.log('installedVersion-----------------', installedVersion);
+
+        if (parseFloat(installedVersion) >= parseFloat(playStoreVersion)) {
+          isNeedUpdate = false;
+        } else {
+          isNeedUpdate = true;
+        }
+
+        // if (isNeedUpdate) {
+        //   console.log('update available');
+        // } else {
+        //   console.log('no available');
+        // }
+      } catch (err) {
+        console.log('appstore err', err);
+      }
+
+      setIsAndroidNew(isNeedUpdate);
+    }
+
+    if (Platform.OS === 'android') {
+      checkAndroidPublishedVersion();
+    } else if (Platform.OS === 'ios') {
+      checkIOSPublishedVersion();
+    }
+  }, []);
+
+  return (
+    <SafeAreaProvider>
+      {Platform.OS === 'ios' ? (
+        isLatest ? (
+          <Alert show={isLatest} />
+        ) : null
+      ) : null}
+      {Platform.OS === 'android' ? (
+        isAndroidNew ? (
+          <AlertAndroid show={isAndroidNew} />
+        ) : null
+      ) : null}
+      <StatusBar
+        backgroundColor="transparent"
+        barStyle="light-content"
+        translucent={true}
+        animated
+      />
+      <Loader />
+      <FlashMessage position="top" hideStatusBar={true} />
+      <RegsiterScreens />
+    </SafeAreaProvider>
+  );
+};
+
+export default InitApp;
+
