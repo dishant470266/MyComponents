@@ -1,0 +1,875 @@
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  StyleSheet,
+  Button,
+  Alert,
+  FlatList,
+  TouchableOpacity,
+  Dimensions,
+  Text,
+  Modal,
+  ScrollView,
+  ToastAndroid,
+} from 'react-native';
+import {
+  ImageControl,
+  InputControl,
+  Layout,
+  LinearButton,
+  PickerModal,
+  RadioButton,
+  SimpleButton,
+  TextControl,
+  MultiSelectControl,
+} from '../../components';
+import { HeaderGradient } from '../../components/layout/header.gradient';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+// import Modal from 'react-native-modal';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
+import { theme } from '../../config';
+import {
+  getCountry,
+  getPlainValue,
+  hideLightBox,
+  hideLoader,
+  isSameByDateMonthYear,
+  navigateBack,
+  navigateTo,
+  scale,
+  scaleVertical,
+  showLightBox,
+} from '../../utils';
+import { withFormik } from 'formik';
+import * as Yup from 'yup';
+import UsersAPI from '../../apis/user';
+import { CountrySelection } from 'react-native-country-list';
+import { GDPRDisclaimer } from './gdpr.disclaimer';
+import sbus from '../../apis/Sbus';
+
+// const GENDER = [
+//   {
+//     id: 'male',
+//     name: 'Male',
+//   },
+//   {
+//     id: 'female',
+//     name: 'Female',
+//   },
+// ];
+
+/**
+ * Sign up
+ */
+
+let selectedTopic = {};
+let flag = [];
+
+const SignUpForm = (props) => {
+  const { componentId, handleSubmit, handleChange, touched, errors, values, setFieldValue } = props;
+
+  console.log(values, 'i am 71');
+
+  const groupByKey = (list, key) => {
+    return list.reduce(
+      (hash, obj) => ({
+        ...hash,
+        [obj[key]]: (hash[obj[key]] || []).concat(obj),
+      }),
+      {}
+    );
+  };
+  const [modalVisible, setModalVisible] = useState(false);
+  const [countrymodal, setCountryModal] = useState('India');
+  console.log(flag, 'i m useState');
+
+  const DATA = [
+    {
+      id: 'bd7acbea-c1b1-46c2-aed5-3ad53abb28ba',
+      title: 'First Item',
+    },
+    {
+      id: '3ac68afc-c605-48d3-a4f8-fbd91aa97f63',
+      title: 'Second Item',
+    },
+    {
+      id: '58694a0f-3da1-471f-bd96-145571e29d72',
+      title: 'Third Item',
+    },
+  ];
+
+  const modalvisible = () => {
+    if (!selectedTopic.id) {
+      console.log('please selected inst');
+      ToastAndroid.showWithGravity('Please select Industry Type', ToastAndroid.SHORT, ToastAndroid.CENTER);
+    } else {
+      setModalVisible(true);
+    }
+  };
+
+  console.log(values, 'wwwwwwwwwwwww');
+  console.log(selectedTopic, 'i am 110');
+
+  // const inst = async () => {
+  //   const { data } = await instance.industryType();
+  //   console.log(data, 'pppppppp');
+  // };
+  async function inst() {
+    // const { data } = await CourseDetailAPI.getQuizConfig({
+    //   id: courseDetail.id,
+    //   courseType: courseDetail.courseType,
+    // });
+    const { data } = await sbus.industryType();
+    setTopicList(data);
+    console.log(data, 'pooooo');
+  }
+
+  async function flags(item) {
+    // const { data } = await CourseDetailAPI.getQuizConfig({
+    //   id: courseDetail.id,
+    //   courseType: courseDetail.courseType,
+    // });
+    const { data } = await sbus.getCountryFlags(item);
+
+    console.log(data, 'data---');
+
+    flag = data;
+    // console.log(flag, 'i ma flag value');
+    flag = flag.sort((a, b) => (a.regionName > b.regionName ? 1 : -1));
+
+    flag = groupByKey(flag, 'regionName');
+    // console.log(flag, 'ptttttt');
+
+    console.log('=========== flag ===========================================');
+    console.log(flag, 'rrttt');
+    console.log('=========== flag ===========================================');
+
+    Object.keys(flag).forEach((item) => {
+      // console.log(flag[item], 'line 141');
+      // console.log('=========== flag ===========================================');
+      // console.JSON(flag[item]);
+      // console.log('=========== flag ===========================================');
+      if (Array.isArray(flag[item].states)) {
+        console.log(Array.isArray(flag[item].states), 'line 143');
+      }
+    });
+    // setTopicList(data);
+    console.log(JSON.stringify(data), 'country json');
+  }
+
+  useEffect(() => {
+    inst();
+
+    console.log(flag, 'tttttttttttt');
+  }, []);
+
+  const styles = useStyles(theme);
+  // const [DATA, setDATA] = React.useState([
+  //   {
+  //     id: 'bd7acbea-c1b1-46c2-aed5-3ad53abb28ba',
+  //     title: 'Lifestyle',
+  //   },
+  //   {
+  //     id: 'bd7acbea-c1b1-46c2-aed5-3ad53abb28ba',
+  //     title: 'Packaging',
+  //   },
+  // ]);
+
+  const [flagimage, setFlagImage] = useState('https://lilstatic.azureedge.net/countryflags/india.png');
+
+  const counrtyName = (item) => {
+    console.log(item.flag, 'item line 149');
+    setFieldValue('country', item.name), setFieldValue('countryObj', item);
+    setCountryModal(item.name), setModalVisible(false), setFlagImage(item.flag);
+  };
+
+  const getList = () => {
+    // console.log(Object.values(flag), 'rrrrrrrrrrr');
+
+    // for (const item in dd) {
+    //   console.log('item>>>>', item);
+    // }
+    return Object.keys(flag).map((item, EUindex) => {
+      return (
+        <View style={{}}>
+          <View style={{ backgroundColor: '#E6E6FA' }}>
+            <Text style={{ padding: 10, fontSize: 18 }}>{item}</Text>
+          </View>
+          {flag[item]
+            .sort((a, b) => (a.name > b.name ? 1 : -1))
+            .map((item, index) => {
+              return (
+                <TouchableOpacity
+                  onPress={() => {
+                    counrtyName(item);
+                  }}
+                >
+                  <Text style={{ padding: 15, fontSize: 16 }}>{item.name}</Text>
+                  {console.log(index, 'i m item name 184')}
+                  {index !== flag[Object.keys(flag)[EUindex]].length - 1 ? (
+                    <View
+                      style={{
+                        borderWidth: 0.5,
+                        borderColor: '#D3D3D3',
+                        width: (Dimensions.get('screen').width * 90) / 100,
+                        alignSelf: 'center',
+                      }}
+                    ></View>
+                  ) : null}
+                </TouchableOpacity>
+              );
+            })}
+        </View>
+      );
+    });
+  };
+  const type = true;
+  const [topicList, setTopicList] = React.useState([]);
+  // const [selectedTopic, setSelectedTopic] = React.useState({});
+  console.log(selectedTopic.id, 'selectedTopicselectedTopic');
+  const getCourceData = async (bu) => {
+    const selectedBranch = getPlainValue('currentBranch');
+    // console.log('get Cource Data BranchId ', selectedBranch.id);
+    // console.log('get Cource Data TopicId ', bu);
+    const { data } = await new TicketFormAPI().fetchTopicAndCourceList(selectedBranch.id, bu);
+    console.log('get cource data from api response ', data);
+    if (data && data.length > 0) {
+      setCourceList(data);
+    }
+  };
+
+  const inputButtonStyle = {
+    containerStyle: styles.containerStyle,
+    labelStyle: styles.labelStyle,
+    inputStyle: styles.inputStyle,
+    inputContainerStyle: styles.inputContainerStyle,
+  };
+
+  console.log(values.cuntryObj, 'oooooooo');
+
+  return (
+    <Layout
+      HeaderComponent={<HeaderGradient title="Customer Sign Up" {...props}></HeaderGradient>}
+      {...props}
+      contentScrollViewStyle={{
+        padding: scale(theme.padding.base),
+      }}
+    >
+      <KeyboardAwareScrollView>
+        <View>
+          <InputControl
+            id="firstName"
+            name="firstName"
+            label="First Name"
+            placeholder=""
+            value={values.firstName}
+            onChangeText={(firstName) => setFieldValue('firstName', firstName)}
+            returnKeyType="next"
+            errorStyle={styles.errorStyle}
+            errorMessage={errors.firstName && touched.firstName ? errors.firstName : ''}
+            {...inputButtonStyle}
+          ></InputControl>
+
+          <InputControl
+            label="Last Name"
+            placeholder=""
+            value={values.lastName}
+            onChangeText={(lastName) => setFieldValue('lastName', lastName)}
+            returnKeyType="next"
+            errorStyle={styles.errorStyle}
+            errorMessage={errors.lastName && touched.lastName ? errors.lastName : ''}
+            {...inputButtonStyle}
+          ></InputControl>
+          <InputControl
+            label="Email"
+            placeholder=""
+            value={values.email}
+            onChangeText={(email) => setFieldValue('email', email)}
+            errorStyle={styles.errorStyle}
+            returnKeyType="next"
+            errorMessage={errors.email && touched.email ? errors.email : ''}
+            {...inputButtonStyle}
+          ></InputControl>
+          <InputControl
+            label="Organisation"
+            value={values.businessName}
+            onChangeText={(businessName) => setFieldValue('businessName', businessName)}
+            returnKeyType="next"
+            errorMessage={errors.businessName && touched.businessName ? errors.businessName : ''}
+            errorStyle={styles.errorStyle}
+            placeholder=""
+            {...inputButtonStyle}
+          ></InputControl>
+
+          {/* ----------------------------New View */}
+          {/* {createdFrom === 1 && topicList && topicList.length > 0 ? (
+            <> */}
+          <View>
+            <TextControl
+              style={{
+                textAlign: 'left',
+                color: theme.colors.grey92,
+                fontFamily: theme.font.family.bold,
+                fontWeight: 'bold',
+                marginVertical: 2,
+              }}
+            >
+              Industry Type
+            </TextControl>
+            <MultiSelectControl
+              items={topicList}
+              single
+              displayKey="label"
+              error={false}
+              selectedItems={[selectedTopic.id, type]}
+              onSelectedItemsChange={([bu]) => {
+                const index = topicList.findIndex((_bu) => _bu.id === bu);
+                console.log(`topic, topiclist, typeof index, index >=  0`);
+                console.log(bu, topicList, index, index >= 0);
+                if (index >= 0) {
+                  // console.log(topicList[index], 'sssssssss');
+                  // setSelectedTopic(topicList[index]);
+                  selectedTopic = topicList[index];
+                  setFieldValue('sbu', topicList[index]);
+                  console.log(bu);
+                  getCourceData(bu);
+                  flags(topicList[index].id);
+                }
+                // onChangeFormType(formType);
+              }}
+            ></MultiSelectControl>
+          </View>
+          {/* </>
+          ) : null} */}
+
+          {/* ---------------------------------New View */}
+
+          <View>
+            <TextControl
+              style={{
+                textAlign: 'left',
+                color: theme.colors.grey92,
+                fontFamily: theme.font.family.bold,
+                fontWeight: 'bold',
+                marginVertical: 2,
+              }}
+            >
+              Country
+            </TextControl>
+            <TouchableOpacity onPress={() => modalvisible()}>
+              {/* <PickerModal
+                value={flag?.name}
+                // component={(flag) => (
+                //   // <CountrySelection
+                //   //   action={(countryObj) => {
+                //   //     setFieldValue('country', countryObj.name);
+                //   //     setFieldValue('countryObj>>', countryObj);
+                //   //     console.log(countryObj, 'countrrrrtyy', countryObj.name);
+                //   //     //hideLoader();
+                //   //     hideLightBox('PickerModalInstance');
+                //   //   }}
+                //   //   selected={values.countryObj}
+                //   // />
+                // )}
+              ></PickerModal> */}
+              <View
+                style={{
+                  borderColor: theme.colors.grey70,
+                  borderRadius: theme.margin.v / 4,
+                  borderWidth: 1,
+                  minHeight: 47,
+                  padding: scale(10),
+                  backgroundColor: theme.colors.white,
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <View>
+                  <Text style={{ textAlignVertical: 'center', fontSize: 16, marginTop: 2 }}>{countrymodal}</Text>
+                </View>
+                <View>
+                  <Icon name="chevron-down" size={25} color={'#000'} />
+                </View>
+              </View>
+              <View style={{ flex: 1, borderColor: 'red' }}>
+                {modalVisible ? (
+                  <Modal
+                    isVisible={modalVisible}
+                    animationIn={'slideInUp'}
+                    animationOut={'slideOutDown'}
+                    backdropOpacity={0.0}
+                    onBackdropPress={() => {
+                      hideLightBox('PickerModalInstance'), setModalVisible(false);
+                    }}
+
+                    // onBackButtonPress={() => }
+                  >
+                    <View
+                      style={{
+                        backgroundColor: '#fff',
+                        flex: 1,
+                      }}
+                    >
+                      <Text style={{ fontSize: 20, color: '#C0C0C0', padding: 10 }}>Country</Text>
+                      <ScrollView>{getList()}</ScrollView>
+                    </View>
+                  </Modal>
+                ) : null}
+              </View>
+            </TouchableOpacity>
+            {errors.country && touched.country && <TextControl style={styles.errorStyle}>{errors.country}</TextControl>}
+          </View>
+          <View
+            style={{
+              marginTop: 10,
+            }}
+          >
+            <TextControl
+              style={[
+                styles.labelStyle,
+                {
+                  textAlign: 'left',
+                },
+              ]}
+            >
+              Contact Number
+            </TextControl>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+              }}
+            >
+              <View style={[styles.inputContainerStyle, styles.countryCodeTextBox]}>
+                <ImageControl
+                  source={{ uri: flagimage }}
+                  style={{
+                    width: scale(20),
+                    height: scale(20),
+                    marginRight: 10,
+                  }}
+                ></ImageControl>
+                {values.countryObj.callingCode ? (
+                  <TextControl>+{values.countryObj?.callingCode || ''}</TextControl>
+                ) : null}
+                {values.countryObj.code ? <TextControl>{values.countryObj?.code || ''}</TextControl> : null}
+              </View>
+
+              <InputControl
+                value={values.mobile}
+                onChangeText={(mobile) => setFieldValue('mobile', mobile)}
+                returnKeyType="next"
+                keyboardType="number-pad"
+                containerStyle={[
+                  {
+                    flex: 2,
+                  },
+                  styles.containerStyle,
+                ]}
+                labelStyle={styles.labelStyle}
+                placeholder=""
+                inputStyle={styles.inputStyle}
+                inputContainerStyle={[
+                  {
+                    borderTopLeftRadius: 0,
+                    borderBottomLeftRadius: 0,
+                  },
+                  styles.inputContainerStyle,
+                ]}
+              ></InputControl>
+            </View>
+            {errors.mobile && touched.mobile && <TextControl style={styles.errorStyle}>{errors.mobile}</TextControl>}
+          </View>
+          <InputControl
+            label="Address"
+            value={values.address}
+            onChangeText={(address) => setFieldValue('address', address)}
+            returnKeyType="next"
+            errorMessage={errors.address && touched.address ? errors.address : ''}
+            errorStyle={styles.errorStyle}
+            multiline={true}
+            placeholder=""
+            {...inputButtonStyle}
+          ></InputControl>
+          <InputControl
+            label="City"
+            value={values.city}
+            onChangeText={(city) => setFieldValue('city', city)}
+            returnKeyType="next"
+            errorMessage={errors.city && touched.city ? errors.city : ''}
+            errorStyle={styles.errorStyle}
+            placeholder=""
+            {...inputButtonStyle}
+          ></InputControl>
+          <InputControl
+            label="Postal Code"
+            value={values.pincode}
+            onChangeText={(pincode) => setFieldValue('pincode', pincode)}
+            returnKeyType="next"
+            errorMessage={errors.pincode && touched.pincode ? errors.pincode : ''}
+            errorStyle={styles.errorStyle}
+            placeholder=""
+            {...inputButtonStyle}
+          ></InputControl>
+
+          <View
+            style={{
+              marginVertical: 10,
+            }}
+          >
+            {/* <TextControl
+          style={[
+            styles.labelStyle,
+            {
+              textAlign: 'left',
+            },
+          ]}
+        >
+          Gender
+        </TextControl> */}
+            {/* <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginTop: 8,
+          }}
+        > */}
+            {/* <RadioButton
+            contentStyle={{
+              flexDirection: 'row',
+              marginRight: theme.margin.base,
+            }}
+            value={GENDER.find(({ id }) => id == values.gender)}
+            onChange={({ id }) => setFieldValue('gender', id)}
+            radios={GENDER}
+            valueId="id"
+            displayId="name"
+          ></RadioButton> */}
+            {/* </View> */}
+            {errors.frequency && (
+              <TextControl
+                style={{
+                  fontSize: theme.font.size.h5,
+                  textAlign: 'left',
+                  marginVertical: 0,
+                  color: theme.colors.primary,
+                }}
+              >
+                {errors.frequency}
+              </TextControl>
+            )}
+          </View>
+
+          <InputControl
+            label="Password"
+            placeholder=""
+            {...inputButtonStyle}
+            value={values.password}
+            onChangeText={(password) => setFieldValue('password', password)}
+            returnKeyType="next"
+            errorStyle={styles.errorStyle}
+            errorMessage={errors.password && touched.password ? errors.password : ''}
+            secureTextEntry={true}
+          ></InputControl>
+
+          <InputControl
+            label="Confirm Password"
+            placeholder=""
+            {...inputButtonStyle}
+            value={values.conformpassword}
+            onChangeText={(conformpassword) => setFieldValue('conformpassword', conformpassword)}
+            returnKeyType="next"
+            errorStyle={styles.errorStyle}
+            errorMessage={errors.conformpassword && touched.conformpassword ? errors.conformpassword : ''}
+            secureTextEntry={true}
+          ></InputControl>
+
+          <TextControl
+            style={{
+              fontSize: theme.font.size.h5,
+            }}
+          >
+            By clicking create account, you agree to our
+            <TextControl
+              onPress={() =>
+                showLightBox({
+                  id: 'GDPRDisclaimer',
+                  component: GDPRDisclaimer,
+                  componentProps: {
+                    dismissModal: () => hideLightBox('GDPRDisclaimer'),
+                  },
+                  useViewAsParentContainer: true,
+                })
+              }
+              style={{
+                fontSize: theme.font.size.h5,
+                color: theme.colors.primary,
+              }}
+            >
+              {' '}
+              GDPR Disclaimer
+            </TextControl>
+            .
+          </TextControl>
+          <LinearButton title="create account" onPress={handleSubmit}></LinearButton>
+        </View>
+      </KeyboardAwareScrollView>
+    </Layout>
+  );
+};
+
+const validationSchema = Yup.object().shape({
+  email: Yup.string().email('Enter a valid email address').required('Enter your email'),
+  city: Yup.string().trim().required('Enter your city'),
+  country: Yup.string().required('Select your country'),
+  // industryType: Yup.string().required('Select your industry'),
+  // gender: Yup.string().required('Select your gender'),
+  firstName: Yup.string().trim().required('Enter your first name'),
+  lastName: Yup.string().trim().required('Enter your last name'),
+  businessName: Yup.string().trim().required('Enter your organization name'),
+
+  mobile: Yup.string().required('Enter your contact number'),
+  // .test('mobile', 'Enter your contact number', function (value) {
+  //   return validateRequired(value, this.parent.country);
+  // })
+  // .test('mobile', 'Contact number is not valid', function (value) {
+  //   return validate(value, this.parent.country);
+  // }),
+
+  address: Yup.string().trim().required('Enter your address'),
+  password: Yup.string()
+    .required('Enter your password')
+    // .max(9, 'Password should not exceed then 9 characters ')
+    // .min(8, 'Password should not below then 8 characters ')
+    // .matches(/^(.*[a-zA-Z0-9])/, 'not matched'),
+    .matches(
+      /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$/,
+      'Password should be of minimum 8 characters in which at least one should be lower-case (a-z),upper-case (A-Z) & number(0-9)'
+    ),
+  conformpassword: Yup.string()
+    .oneOf([Yup.ref('password')], 'Password and confirm password should be same')
+    .required('Re-enter your password'),
+});
+
+// sign up form
+export const SignUp = (props) => {
+  const countryObj = getCountry('India');
+  const SignUpWithFormik = withFormik({
+    mapPropsToValues: () => ({
+      firstName: '',
+      lastName: '',
+      email: '',
+      businessName: '',
+      country: countryObj.name,
+      countryObj,
+      // selectedTopic,
+      // industryType: selectedTopic,
+      sbu: selectedTopic,
+      mobile: '',
+      address: '',
+      city: '',
+      // gender: 'male',
+      password: '',
+      conformpassword: '',
+      pincode: '',
+    }),
+    validationSchema,
+    handleSubmit: async (values, { setSubmitting, props }) => {
+      setSubmitting(true);
+      // console.log(props, 'i am props inside');
+
+      try {
+        delete values.conformpassword;
+        console.log('i am in try block');
+        console.log(values, 'i ma pass the API');
+        await UsersAPI.signup({ ...values });
+        setSubmitting(false);
+
+        Alert.alert(
+          'Signup Request Registered',
+          'Thank you for Signing up. Our representative will contact you shortly.', ////'Henkel shall revert back to you shorty',
+          [{ text: 'OK', onPress: () => navigateBack(props.componentId) }],
+          { cancelable: false }
+        );
+      } catch (error) {
+        setSubmitting(false);
+        Alert.alert(
+          'Error',
+          error.data.error && error.data.error.message
+            ? error.data.error.message
+            : 'Sign Up Failed. Try After sometime',
+          [{ text: 'OK', onPress: () => navigateBack(props.componentId) }]
+        );
+        console.log(error, 'i am error>>');
+      }
+    },
+
+    displayName: 'SignUpForm',
+  })(SignUpForm);
+
+  return <SignUpWithFormik {...props} />;
+};
+
+const useStyles = (theme) =>
+  StyleSheet.create({
+    inputContainerStyle: {
+      backgroundColor: theme.colors.white,
+      minHeight: scaleVertical(45),
+      paddingHorizontal: 10,
+    },
+
+    containerStyle: {
+      marginVertical: 2,
+    },
+
+    inputStyle: {
+      alignSelf: 'flex-start',
+    },
+
+    labelStyle: {
+      marginVertical: 1,
+      marginLeft: 0,
+      fontFamily: theme.font.family.bold,
+      fontWeight: 'bold',
+      color: theme.colors.grey92,
+      fontSize: theme.font.size.h4,
+    },
+
+    errorStyle: {
+      fontSize: theme.font.size.h5,
+      textAlign: 'left',
+      marginVertical: 0,
+      color: theme.colors.primary,
+    },
+
+    countryCodeTextBox: {
+      width: 80,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderTopEndRadius: 0,
+      borderBottomEndRadius: 0,
+      borderColor: theme.colors.grey70,
+      borderRadius: theme.margin.v / 5,
+      borderWidth: 1,
+      backgroundColor: theme.colors.grey40,
+      height: scaleVertical((16.5 / 45) * 10),
+    },
+    modalView: {
+      width: Dimensions.get('screen').width,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderTopEndRadius: 0,
+      borderBottomEndRadius: 0,
+      borderColor: theme.colors.grey70,
+      // borderRadius: theme.margin.v / 5,
+      borderWidth: 1,
+      backgroundColor: theme.colors.grey40,
+      height: (Dimensions.get('screen').height * 12) / 100,
+    },
+    modalHeader: {
+      fontWeight: 'bold',
+      color: '#E01C6A',
+      textAlign: 'center',
+      fontSize: 22,
+      marginBottom: 10,
+    },
+    centeredView: {
+      // top: Dimensions.get('screen').height / 2 - (Dimensions.get('screen').height * 49) / 100 / 2,
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      alignSelf: 'center',
+      width: Dimensions.get('window').width,
+      // borderColor:"pink",borderWidth:1
+    },
+    modalView: {
+      // margin: 20,
+      backgroundColor: 'white',
+      width: Dimensions.get('screen').width,
+      height: (Dimensions.get('screen').height * 40) / 100,
+      // borderRadius: 20,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      padding: 10,
+      // bottom:0,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+      elevation: 5,
+    },
+    button: {
+      borderRadius: 20,
+      padding: 10,
+      elevation: 2,
+    },
+    buttonOpen: {
+      backgroundColor: '#F194FF',
+    },
+    buttonClose: {
+      backgroundColor: '#2196F3',
+    },
+    textStyle: {
+      color: 'white',
+      fontWeight: 'bold',
+      textAlign: 'center',
+    },
+    modalText: {
+      marginBottom: 15,
+      textAlign: 'center',
+    },
+    inputcontainer: {
+      marginVertical: 10,
+      width: (Dimensions.get('screen').width * 95) / 100,
+      alignSelf: 'center',
+      // borderColor:'blue',borderWidth:1
+    },
+    sectionTxt: {
+      color: '#000',
+      fontSize: 20,
+      marginBottom: 5,
+      // fontStyle: 'italic',
+      fontWeight: 'bold',
+    },
+    input1: {
+      width: (Dimensions.get('screen').width * 95) / 100,
+      height: (Dimensions.get('screen').height * 5) / 100,
+      // borderRadius: 3,
+      paddingLeft: 10,
+      backgroundColor: 'rgba(192,192,192,0.4)',
+      color: '#000',
+      fontSize: 14,
+      fontWeight: 'bold',
+      fontStyle: 'italic',
+    },
+    selectedsectionTxt: {
+      width: '92.5%',
+      height: (Dimensions.get('screen').height * 5) / 100,
+      textAlignVertical: 'center',
+      color: '#000',
+      fontSize: 14,
+      fontWeight: 'bold',
+      fontStyle: 'italic',
+    },
+    downIcon: {
+      alignSelf: 'center',
+      marginRight: 10,
+    },
+    filterModal: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      width: (Dimensions.get('screen').width * 95) / 100,
+    },
+    fliterTitle: {
+      fontWeight: 'bold',
+      color: '#D3D3D3',
+      fontSize: 20,
+    },
+  });
