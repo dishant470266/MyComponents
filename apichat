@@ -1,0 +1,244 @@
+import React, { useState, useEffect } from 'react';
+import { GiftedChat, Bubble, Time, BubbleProps, IMessage, User } from 'react-native-gifted-chat';
+import HTMLView from 'react-native-htmlview';
+import { StyleSheet, View, Image } from 'react-native';
+import { Options, Navigation } from 'react-native-navigation';
+import { useFCMNotifications, FCMNotification } from 'rnlil/packages/hooks/useFCMNotifications';
+import { ScreenProps } from 'rnlil/packages/types/types';
+import { getPlain } from 'rnlil/packages/utils/StorageUtil';
+
+import LearningNetworkPostResponseAPI from '../../apis/LearningNetworkPostResponseAPI';
+import styleConfig from '../../utils/ColorUtils';
+import { getUser } from '../../utils';
+
+interface Comment {
+  id: string;
+  _id: string;
+  text: string;
+  creationTime: Date;
+  from: {
+    id: string;
+    userDetail: {
+      firstName: string;
+      userThumbnail: {
+        thumb: string;
+      };
+    };
+  };
+}
+
+interface ChatProps extends ScreenProps {
+  componentId: string;
+  postId: string;
+  groupId: string;
+}
+
+function renderBubble(props: Bubble['props']) {
+  return (
+    <Bubble
+      {...props}
+      wrapperStyle={{
+        left: {
+          backgroundColor: '#add8e6',
+        },
+        right: {
+          backgroundColor: '#f0f0f0',
+        },
+      }}
+    />
+  );
+}
+
+function renderTime(props: Time['props']) {
+  return (
+    <Time
+      {...props}
+      textStyle={{
+        right: {
+          color: '#000',
+        },
+        left: {
+          color: '#000',
+        },
+      }}
+    />
+  );
+}
+
+interface HTMLMessage extends IMessage {
+  html?: string;
+  // createdAt: Date;
+}
+
+interface CustomViewProps extends BubbleProps<HTMLMessage> {}
+
+// renderCustomView TS definition missing props param
+function renderCustomView({ currentMessage }: BubbleProps<HTMLMessage>): React.ReactNode {
+  const { html = '' } = currentMessage || {};
+  if (html) {
+    // style in not defined in TS types of react-native-htmlview package
+    return <HTMLView style={styles.htmlView} value={html} />;
+  }
+  return <></>;
+}
+
+function setTopBar(componentId: string, title: string) {
+  const opts: Options = {
+    topBar: {
+      title: {
+        text: title,
+      },
+      backButton: {
+        showTitle: false,
+      },
+    },
+  };
+
+  Navigation.mergeOptions(componentId, opts);
+}
+
+function transformLNResponse(m: Comment) {
+  const { id, _id, text, creationTime, from } = m;
+  const d = {
+    _id: id || _id,
+    html: text,
+    text: '',
+    createdAt: creationTime,
+    user: {
+      _id: from.id,
+      name: from.userDetail.firstName,
+      avatar: from.userDetail.userThumbnail && from.userDetail.userThumbnail.thumb,
+    },
+    system: false,
+  };
+
+  return d;
+}
+export default function Chat({ componentId, postId, groupId }: ChatProps) {
+  // setTopBar(componentId, 'Comments');
+  const user = getUser();
+  // console.log('user', user);
+
+  function onNotificationReceived(notification: FCMNotification) {
+    const { data: payloadData } = notification;
+
+    if (
+      payloadData.data &&
+      payloadData.type &&
+      payloadData.type === 'LearningNetworkPostResponse' &&
+      payloadData.postId === postId
+    ) {
+      const data = JSON.parse(payloadData.data);
+      console.log('fcm data', data);
+      if (data.postResponseType === 'Comment' && data.from.id !== user.id) {
+        setMessages((oldMsgs) => GiftedChat.append(oldMsgs, [transformLNResponse(data)]));
+      }
+    }
+  }
+  useFCMNotifications({ onNotificationReceived, showLocalNotification: false });
+  const [messages, setMessages] = useState([
+    {
+      _id: Math.round(Math.random() * 1000000),
+      text: 'Loading comments..',
+      createdAt: new Date(),
+      system: true,
+      user: {
+        _id: 1,
+        name: 'System',
+      },
+    },
+  ]);
+
+  function onSend(newMsgs: Array<IMessage>) {
+    const arr: Array<HTMLMessage> = [];
+    newMsgs.forEach((m: IMessage) => {
+      LearningNetworkPostResponseAPI.post('', {
+        postId,
+        postResponseType: 'Comment',
+        text: m.text,
+        from: {
+          id: user.id,
+          name: `${user.firstName} ${user.lastName}`.trim(),
+          role: user.role.name,
+        },
+        to: {
+          id: groupId,
+        },
+      }).catch((e) => console.log(e));
+
+      arr.push({ ...m, ...{ html: m.text, text: '' } });
+      // const o: HTMLMessage = { ...m };
+      // o.html = m.text;
+      // o.text = '';
+      // o.createdAt = new Date(m.createdAt);
+      // arr.push(o);
+    });
+
+    setMessages((oldMsgs) => GiftedChat.append(oldMsgs, arr));
+  }
+
+  useEffect(() => {
+    async function callAPI() {
+      const { data } = await LearningNetworkPostResponseAPI.fetchPostResponse(postId, 'Comment', 0, 100);
+
+      console.log('callapi--', data);
+
+      const chatMsgs = data.map(transformLNResponse);
+
+      setMessages(chatMsgs);
+    }
+    callAPI();
+  }, [postId]);
+
+  return (
+    <>
+      {messages.length === 0 && (
+        <View style={[StyleSheet.absoluteFill, styles.noCommentMsgContainer]}>
+          <Image source={{ uri: 'https://i.stack.imgur.com/qLdPt.png' }} style={styles.noCommentMsgImage} />
+        </View>
+      )}
+      <GiftedChat
+        messages={messages}
+        onSend={(newMsgs) => onSend(newMsgs)}
+        renderCustomView={renderCustomView}
+        renderBubble={renderBubble}
+        renderTime={renderTime}
+        user={{
+          _id: user.id,
+        }}
+      />
+    </>
+  );
+}
+
+Chat.options = (): Options => ({
+  topBar: {
+    visible: true,
+    title: { text: 'Comments', color: '#FFF' },
+    background: {
+      color: styleConfig.primaryColor,
+    },
+    backButton: {
+      color: '#FFF',
+      showTitle: false,
+    },
+  },
+});
+
+const styles = StyleSheet.create({
+  noCommentMsgImage: {
+    ...StyleSheet.absoluteFillObject,
+    resizeMode: 'contain',
+  },
+  noCommentMsgContainer: {
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    bottom: 50,
+  },
+  htmlView: {
+    borderRadius: 13,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+});
