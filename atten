@@ -1,0 +1,934 @@
+import React, {useState, useEffect} from 'react';
+import {
+  StyleSheet,
+  View,
+  Text,
+  FlatList,
+  Dimensions,
+  Platform,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+  Alert,
+  Modal,
+} from 'react-native';
+import VIcon from 'react-native-vector-icons/MaterialCommunityIcons';
+import {Picker, PickerIOS} from '@react-native-picker/picker';
+import {formatDate} from '../rnlil/packages/utils/DateUtil';
+import Icon from 'react-native-vector-icons/FontAwesome5';
+import {screenPop} from '../rnlil/packages/utils/NavigationUtil';
+import {getPlain} from '../rnlil/packages/utils/StorageUtil';
+import {User} from '@sentry/types';
+import {
+  OrientationLocker,
+  PORTRAIT,
+  LANDSCAPE,
+} from 'react-native-orientation-locker';
+import TerritoryAPI from '../apis/TerritoryAPI';
+import {GenericObjectType} from '../rnlil/packages/types/types';
+import {useForm} from '../rnlil/packages/utils/FormUtil';
+import LessonPlanAPI from '../apis/LessonPlanAPI';
+import SectionApi from '../apis/SectionApi';
+import StudentAttenAPI from '../apis/StudentAttenAPI';
+import BranchApi from '../apis/BranchApi';
+import MarkAttendance from '../apis/MarkAttendance';
+import {showMessage} from 'react-native-flash-message';
+import {useFocusEffect} from '@react-navigation/native';
+import AsyncStorage from '@react-native-community/async-storage';
+import Loader from '../utils/Loader';
+
+let instituteId = '';
+let territoryId = '';
+let selectedGrade = '';
+let initialGrade = '';
+let initialSection = '';
+let skip = 0;
+var empty: any = [];
+let totalCount = 0;
+let selectedSection = '';
+
+const ClassAttendance = ({route, navigation}: any) => {
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
+  const [refreshFlatlist, setRefreshFlatList] = useState(false);
+
+  const [territoryData, setTerritoryData] = useState<GenericObjectType>({});
+  const [currentDate, setCurrentDate] = useState('');
+  const [gradeData, setGradeData] = useState([{label: '', value: ''}]);
+  const [sectionData, setSectionData] = useState([{label: '', value: ''}]);
+  const [sectionResponse, setSectionResponse] = useState();
+  // const [instituteId, setInstituteId] = useState('');
+  let [studentlist, setStudentList] = useState<any>([]);
+  const [indicator, setIndicator] = useState(false);
+  //const [count, setCount] = useState();
+
+  // console.log(studentlist, 'studentliststudentlist');
+
+  // console.log(gradeData, 'gradeData===========>');
+
+  const defaultValues: GenericObjectType = {
+    territory: '',
+    grade: '',
+  };
+  const user = getPlain<User>('user');
+  type Values = typeof defaultValues;
+  const useFormData = useForm<Values>({
+    defaultValues,
+  });
+  const {setValue, getValues} = useFormData;
+  const values = getValues();
+  // const [selectedGrade, setSelectedGrade] = useState('');
+  // const [selectedSection, setSelectedSection]=useState('');
+  // console.log(selectedGrade, 'selectedGrade====>');
+
+  // const [selectedSection, setSelectedSection] = useState('');
+  // const [territoryId, setTerritoryId] = useState();
+  // console.log(territoryId, 'territoryId======>');
+
+  let sections = [''];
+  let sectionID = [''];
+
+  const getTime = () => {
+    var today = new Date();
+    var dd = String(today.getDate()).padStart(2, '0');
+    var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+    var yyyy = today.getFullYear();
+    setCurrentDate(dd + '-' + mm + '-' + yyyy);
+  };
+
+  useEffect(() => {
+    setIndicator(true);
+    getTerritory();
+    getTime();
+    // getStudentList();
+    setIndicator(false);
+    return () => {
+      instituteId = '';
+      territoryId = '';
+      selectedGrade = '';
+      initialGrade = '';
+      initialSection = '';
+      skip = 0;
+      empty = [];
+      totalCount = 0;
+      selectedSection = '';
+    };
+  }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      AsyncStorage.getItem('gradeSet').then(value => {
+        if (value) {
+          console.log(' useEffect grade from params , ', value);
+          const grade = JSON.parse(value);
+          console.log(' useEffect grade from set variable , ', grade);
+        }
+      });
+      console.log('useEffectCalled started ', route.params);
+    }, [navigation]),
+  );
+
+  async function getTerritory() {
+    const {data} = await TerritoryAPI.getTerritoryList();
+    let finalterritory = JSON.stringify(data[0]);
+    console.log('qwertyufdsxcv' + finalterritory);
+
+    console.log('TerritoryAPI data==>instituteId', data[0].instituteId);
+    // setInstituteId(data[0].instituteId);
+
+    if (data && data.length > 0) {
+      instituteId = data[0].instituteId;
+      // setTerritoryId(data[0].id);
+      console.log('data[0].id' + data[0].id);
+
+      territoryId = data[0].id;
+      setValue('territory', data[0].id);
+      const obj: GenericObjectType = {};
+      data.forEach((territory: any) => {
+        obj[territory.id] = territory.name;
+      });
+      setTerritoryData(obj);
+    }
+    if (data && data.length > 0) {
+      console.log('in ifffff');
+      getGrade(data[0].id);
+      console.log(data[0].id, 'sknflsnfkjsfksjf');
+    } else {
+      setValue('territory', user.territoryId);
+      getGrade(user.territoryId);
+      console.log(user.territoryId, 'user.territoryId=====>');
+    }
+    // getStudentList();
+  }
+
+  async function getGrade(territoryId: string) {
+    const groupArray: any = [];
+    console.log(groupArray, 'khkjkkj');
+
+    console.log('territoryId', territoryId);
+    const filterObj = {
+      programType: 0,
+      territoryId,
+    };
+    console.log('object for getGrade', filterObj);
+
+    const {data} = await LessonPlanAPI.getGradeList(filterObj);
+    console.log('in grade data', data);
+    if (data && data.length > 0) {
+      data.forEach((group: any) => {
+        console.log(group, 'yfuyffhthdh');
+
+        const obj: any = {label: '', value: ''};
+
+        obj.label = group.name;
+        obj.value = group._id || group.id;
+        console.log(obj.label, 'obbbbbbbbbbbbbbbbbbbbbjjjjjjjjjjj');
+        groupArray.push(obj);
+      });
+      if (groupArray.length > 0) {
+        setGradeData(groupArray);
+        console.log(groupArray, 'akchchaf');
+        // setSelectedGrade(groupArray[0].value);
+        initialGrade = groupArray[0].value;
+        selectedGrade = groupArray[0].value;
+        fetchSection(groupArray[0].value);
+        console.log('selectedGrade is', selectedGrade);
+
+        // setGradeData(groupArray[0].label);
+      }
+    }
+  }
+
+  const getStudentList = async () => {
+    // setIndicator(true);
+    // setStudentList([]);
+    console.log('i am getStudent List==>', attendanceRecords);
+    try {
+      const branch = await Promise.all([BranchApi.getBranchList()]);
+      console.log(branch[0].data[0].id, 'branchbranchbranch');
+      console.log('sectionresponse 167', sectionResponse);
+
+      // const obj = {
+      //   territoryId,
+      //   skip: 0,
+      //   limit: 2,
+      //   sectionResponse,
+      //   instituteId,
+      //   selectedGrade,
+      // };
+      // console.log('selected gdae here' + selectedGrade);
+
+      const obj1 = {
+        instituteId: instituteId,
+        gradeIds: [selectedGrade],
+        sectionIds: [selectedSection],
+        branchIds: [branch[0].data[0].id],
+        territoryIds: [territoryId],
+        skip: skip,
+        limit: 50,
+      };
+      // console.log('hell');
+
+      console.log('object1 to be used', obj1);
+      // console.log('object to be used', obj);
+
+      // console.error(
+      //   'errorrr===>',
+      //   branch[0].data[0].epmsRegionId,
+      //   'errorrr===>',
+      // );
+
+      // console.log(obj, 'objobjobjobj=>>>');
+
+      setIndicator(true);
+
+      const dataList = await StudentAttenAPI.getStudent(obj1);
+
+      console.log(dataList.data.userList, 'dataListdataListdataListdataList');
+      //setCount(dataList.data.totalCount);
+      totalCount = dataList.data.totalCount;
+
+      let temp = dataList.data.userList;
+      // temp = temp.map((i: any, index: any) => ({
+      //   ...i,
+      //   status:
+      //     attendanceRecords[index] &&
+      //     attendanceRecords[index].status !== undefined
+      //       ? attendanceRecords[index].status
+      //       : 1,
+      //   online:
+      //     attendanceRecords[index] &&
+      //     attendanceRecords[index].online !== undefined
+      //       ? attendanceRecords[index].online
+      //       : 0,
+      // }));
+      console.log(temp, 'temptemptemptemptemptemptemp');
+      let temArray = [];
+      for (let u in temp) {
+        temArray.push(temp[u]);
+      }
+      // setStudentList([...studentlist, temp]);
+      console.log(
+        'i am in start===>',
+        dataList.data.userList,
+        'kavlskjbkjdbjdbjdbjdhbjhd',
+      );
+      setStudentList([...temp]);
+      console.log('asfaga', temp.length);
+
+      // dataList.data.result.forEach(ele => {
+      //   ele.date = formatDate(ele.creationTime, 'dd-MMM-yy');
+      // });
+      // getAttendance();
+      setRefreshFlatList(!refreshFlatlist);
+      getAttendance();
+      setIndicator(false);
+      setTimeout(() => {
+        console.log('print student list >>>>', JSON.stringify(temp));
+        console.log('print student list >>>>', JSON.stringify(studentlist));
+      }, 5000);
+    } catch (error) {
+      setIndicator(false);
+      console.log(error, 'ndcjc');
+    }
+    // setRefreshFlatList(!refreshFlatlist);
+  };
+  const getAttendance = async () => {
+    setAttendanceRecords(empty);
+    const object = {
+      gradeId: selectedGrade,
+      sectionId: selectedSection,
+      date: new Date(),
+    };
+    console.log('object for status', object);
+
+    const {data} = await MarkAttendance.getAttendance(object);
+    // data.data.forEach((item: any, index: any) => {
+    //   attendanceRecords.push(item);
+    // });
+    data.data.forEach((e: any) => {
+      try {
+        if (e.hasOwnProperty('online') && e.hasOwnProperty('status')) {
+          console.log(e, 'eeeeeeeeeiiiii');
+          console.log(studentlist[0].id, 'studentlist');
+          console.log(e.studentId, 'aaaaaaaaaaaaaaaaaa');
+          // attendanceRecords.push(item);
+          const index = studentlist.findIndex(
+            (item: {id: any}) => item.id === e.studentId,
+          );
+          if (index > -1) {
+            const temp = studentlist;
+            temp[index].status = e.status;
+            temp[index].online = e.online;
+            setStudentList([...temp]);
+            console.log(studentlist, 'stuuuuuuuuuuuuuuuuuu');
+          } else {
+            setStudentList([...studentlist]);
+          }
+        }
+      } catch (error) {
+        console.log(error, 'errorrrrr');
+      }
+
+      console.log(studentlist, 'itemmmmmmm');
+    });
+    setAttendanceRecords(data.data);
+    // setAttendanceRecords(data.data);
+    console.log('attendance records count', attendanceRecords);
+  };
+
+  const fetchSection = async (selectedGrade: any) => {
+    // console.warn('gid selected',gID);
+    // console.warn(val);
+    const groupArray: any = [];
+    console.log('grade ID received', selectedGrade);
+
+    sections = ['All'];
+    sectionID = [''];
+    const sectionResponse = await Promise.all([
+      SectionApi.getSectionList(selectedGrade),
+    ]);
+    console.log(sectionResponse[0].data, 'sectionResponsesectionResponse');
+    setSectionResponse(sectionResponse[0].data);
+
+    if (sectionResponse && sectionResponse.length > 0) {
+      sectionResponse[0].data.forEach((group: any) => {
+        console.log(group, 'yfuyffhthdh===>');
+
+        const obj: any = {label: '', value: ''};
+
+        obj.label = group.name;
+        obj.value = group._id || group.id;
+        console.log(obj.label, 'obbbbbbbbbbbbbbbbbbbbbjjjjjjjjjjj===>>');
+        groupArray.push(obj);
+      });
+      if (groupArray.length > 0) {
+        setSectionData(groupArray);
+        console.log(groupArray, 'akchchaf========>>>>>>');
+        // setSelectedSection(groupArray[0].value);
+        selectedSection = groupArray[0].value;
+        console.log('selectedSection is', selectedSection);
+
+        initialSection = groupArray[0].value;
+        // setGradeData(groupArray[0].label);
+      }
+    }
+    await getAttendance();
+    await getStudentList();
+  };
+
+  const ateen = (index: any) => {
+    let arr = [...studentlist];
+    console.log(index, 'indexindexindexindexindexindex');
+
+    arr[index].status = arr[index].status == 1 ? 0 : 1;
+    setStudentList(arr);
+    console.log(studentlist, 'setStudentList--------------------');
+  };
+
+  const online = (index: any) => {
+    // item.online = item.online ? 0 : 1;
+    let arr = [...studentlist];
+    console.log(index, 'indexindexindexindexindexindex');
+
+    arr[index].online = arr[index].online == 1 ? 0 : 1;
+    setStudentList(arr);
+  };
+  const save = async () => {
+    const obj = {
+      date: new Date(),
+      gradeId: selectedGrade,
+      sectionId: selectedSection,
+      studentList: studentlist,
+    };
+    console.log('obj to pass', obj);
+
+    const {data} = await MarkAttendance.saveStudents(obj);
+    showMessage({
+      message: 'Changes Saved',
+      type: 'success',
+    });
+  };
+  const discard = () => {
+    // selectedSection = initialSection;
+    // selectedGrade = initialGrade;
+    emptytheArray();
+    getAttendance();
+    getStudentList();
+    showMessage({
+      message: 'Discarding all the changes',
+      type: 'warning',
+    });
+  };
+  const handleLoadMore = () => {
+    console.log('count and size ', totalCount, '==', studentlist.length);
+    // setIndicator(true);
+    if (totalCount > studentlist.length) {
+      skip = skip + 50;
+      getStudentList();
+      console.log('studentlength' + studentlist.length);
+    }
+
+    setIndicator(false);
+  };
+  const emptytheArray = () => {
+    // while (studentlist.length > 0) {
+    //   studentlist.pop();
+    // }
+    studentlist = [];
+    //setStudentList(empty);
+  };
+  return (
+    <View style={styles.container}>
+      <OrientationLocker orientation={PORTRAIT} />
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => screenPop(navigation)}>
+          <VIcon
+            name="chevron-left"
+            size={40}
+            color={'#fff'}
+            style={styles.leftarrow}
+          />
+        </TouchableOpacity>
+        <Text style={styles.ClassAttendance}>Class Attendance</Text>
+      </View>
+      <View>
+        <View style={styles.dropdownContainer}>
+          <View style={{flexWrap: 'wrap', flex: 1}}>
+            <Text style={styles.grade}>Grade</Text>
+            {Platform.OS === 'ios' ? (
+              <PickerIOS
+                style={{width: '100%'}}
+                selectedValue={selectedGrade}
+                onValueChange={(itemValue, itemIndex) => (
+                  // setSelectedGrade(itemValue),
+                  (selectedGrade = itemValue.toString()),
+                  // (studentlist = []),
+                  //emptytheArray(),
+                  (studentlist = []),
+                  fetchSection(itemValue),
+                  console.log(
+                    selectedGrade,
+                    'selectedGradeselectedGradeselectedGradeselectedGrade',
+                  )
+                  // getStudentList()
+                )}>
+                {gradeData.map(
+                  (row, index) => (
+                    <Picker.Item
+                      label={row.label}
+                      value={row.value}
+                      style={{
+                        color: row.value == selectedGrade ? '#000' : '#A9A9A9',
+                        // color: 'red',
+                      }}
+                    />
+                  ),
+                  // console.log(row.label, 'Helloooooooo'),
+                )}
+
+                {/* <Picker.Item label="EJ" value="EJ" /> */}
+              </PickerIOS>
+            ) : (
+              <Picker
+                style={{width: '100%'}}
+                selectedValue={selectedGrade}
+                onValueChange={(itemValue, itemIndex) => (
+                  // setSelectedGrade(itemValue),
+                  // setStudentList([]),
+                  //emptytheArray(),
+                  (studentlist = []),
+                  (selectedGrade = itemValue),
+                  // (studentlist = []),
+                  (skip = 0),
+                  (totalCount = 0),
+                  fetchSection(itemValue),
+                  console.log(
+                    selectedGrade,
+                    'selectedGradeselectedGradeselectedGradeselectedGrade',
+                  )
+                  // getStudentList()
+                )}>
+                {gradeData.map(
+                  (row, index) => (
+                    <Picker.Item
+                      label={row.label}
+                      value={row.value}
+                      style={{
+                        color: row.value == selectedGrade ? '#000' : '#A9A9A9',
+                        // color: 'red',
+                      }}
+                    />
+                  ),
+                  // console.log(row.label, 'Helloooooooo'),
+                )}
+
+                {/* <Picker.Item label="EJ" value="EJ" /> */}
+              </Picker>
+            )}
+          </View>
+          <View style={{flex: 1}}>
+            <Text style={styles.grade}>Section</Text>
+            {Platform.OS === 'ios' ? (
+              <PickerIOS
+                // style={{width: '100%'}}
+                selectedValue={selectedSection}
+                onValueChange={
+                  (itemValue, itemIndex) => (
+                    console.log('qwedsxcv', itemValue),
+                    (selectedSection = itemValue.toString()),
+                    // setStudentList([]),
+                    //emptytheArray(),
+                    (studentlist = []),
+                    // (studentlist = []),
+                    getStudentList()
+                  )
+                  // setSelectedSection(itemValue), fetchSection(itemValue)
+                }>
+                {sectionData.map(
+                  (row, index) => (
+                    <Picker.Item
+                      label={row.label}
+                      value={row.value}
+                      style={{
+                        color: row.value == selectedSection ? '#000' : '#000',
+                        // color: 'red',
+                      }}
+                    />
+                  ),
+                  // console.log(row.label, 'Helloooooooo'),
+                )}
+              </PickerIOS>
+            ) : (
+              <Picker
+                // style={{width: '100%'}}
+                selectedValue={selectedSection}
+                onValueChange={
+                  (itemValue, itemIndex) => (
+                    (selectedSection = itemValue),
+                    console.log('section changed', selectedSection),
+                    // setStudentList([]),
+                    //emptytheArray(),
+                    (studentlist = []),
+                    // (studentlist = []),
+                    console.log('length of students', studentlist.length),
+                    (skip = 0),
+                    (totalCount = 0),
+                    getStudentList()
+                  )
+                  // setSelectedSection(itemValue), fetchSection(itemValue)
+                }>
+                {sectionData.map(
+                  (row, index) => (
+                    <Picker.Item
+                      label={row.label}
+                      value={row.value}
+                      style={{
+                        color: row.value == selectedSection ? '#000' : '#000',
+                        // color: 'red',
+                      }}
+                    />
+                  ),
+                  // console.log(row.label, 'Helloooooooo'),
+                )}
+              </Picker>
+            )}
+          </View>
+          <View style={{flex: 1}}>
+            <Text style={styles.grade}>Date</Text>
+            <View style={styles.datetxt}>
+              <Text style={styles.date}>{currentDate}</Text>
+              <Icon
+                name="calendar-alt"
+                color="#000"
+                size={20}
+                style={{
+                  right: 15,
+                  alignSelf: 'center',
+                  marginTop: 5,
+                }}
+              />
+            </View>
+          </View>
+        </View>
+      </View>
+      <View style={styles.orangeContainer}>
+        <View
+          style={{
+            // borderWidth: 1,
+            width: (Dimensions.get('screen').width * 50) / 100,
+          }}>
+          <Text style={styles.txt}>Name/Mobile No.</Text>
+        </View>
+        <View
+          style={{
+            // alignItems: 'flex-end',
+            // left: (Dimensions.get('screen').width * 10) / 100,
+            // flex: 1,
+            width: (Dimensions.get('screen').width * 24) / 100,
+
+            // borderWidth: 1,
+          }}>
+          <Text style={{...styles.txt, textAlign: 'center'}}>Attendance</Text>
+        </View>
+        <View
+          style={{
+            // alignItems: 'flex-end',
+            // flex: 1,
+            // borderWidth: 1,
+            width: (Dimensions.get('screen').width * 19) / 100,
+          }}>
+          <Text style={{...styles.txt, textAlign: 'center'}}>Status</Text>
+        </View>
+      </View>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={indicator}
+        style={{alignSelf: 'center', alignItems: 'center'}}>
+        {/* <ActivityIndicator
+          size="large"
+          color="#0000ff"
+          style={{alignItems: 'center', justifyContent: 'center', flex: 1}}
+        /> */}
+        <Loader />
+      </Modal>
+
+      <>
+        {studentlist.length < 0 ? (
+          <View
+            style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+            <Text style={{color: '#000'}}>No Student </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={studentlist}
+            keyExtractor={(item, index) => index.toString()}
+            // ListFooterComponent={() => return(setIndicator(true)}
+            onEndReached={() => {
+              handleLoadMore();
+            }}
+            onEndReachedThreshold={0.9}
+            renderItem={({item, index}) => (
+              <View
+                style={{
+                  backgroundColor: index % 2 == 0 ? '#fff' : '#F8F7FA',
+                  flexDirection: 'row',
+                }}>
+                <View
+                  style={{
+                    flexDirection: 'column',
+                    marginLeft: (Dimensions.get('screen').width * 2.5) / 100,
+                    // left: 3,
+                    // flex: 1,
+                    // borderWidth: 1,
+                    width: (Dimensions.get('screen').width * 55) / 100,
+                    paddingTop: (Dimensions.get('screen').width * 1.5) / 100,
+                    paddingBottom: (Dimensions.get('screen').width * 1.5) / 100,
+                  }}>
+                  <Text
+                    numberOfLines={1}
+                    style={{fontSize: 15, color: '#0892d0'}}>
+                    {item.firstName} {item.lastName}
+                    {/* {item.status}-{item.online} */}
+                  </Text>
+                  <Text style={{marginTop: 2}}>+91 {item.mobile}</Text>
+                </View>
+                {/* <TouchableOpacity onPress={() => ateen(index)}> */}
+
+                <View style={[styles.atten]}>
+                  <TouchableOpacity
+                    style={styles.imageView}
+                    onPress={() => (
+                      ateen(index),
+                      // item.status === 1
+                      //   ? (item.status = 0)
+                      //   : (item.status = 1),
+                      console.log('qasdfrtyuikmnbvcx', item.status)
+                    )}>
+                    {/* <Text>{item.status}</Text> */}
+                    {item.status === 1 ? (
+                      <Image
+                        style={styles.img}
+                        source={require('../resources/theme/icons/P.png')}
+                      />
+                    ) : (
+                      <Image
+                        style={styles.img}
+                        source={require('../resources/theme/icons/A.png')}
+                      />
+                    )}
+                  </TouchableOpacity>
+                </View>
+
+                {/* </TouchableOpacity> */}
+                {/* {item.online == 1 ? (
+                    <View style={[styles.atten]}>
+                      <TouchableOpacity
+                        style={styles.imageView}
+                        onPress={() => online(index)}>
+                        <Image
+                          style={styles.img}
+                          source={require('../resources/theme/icons/PC.png')}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View style={styles.atten}>
+                      <TouchableOpacity style={styles.imageView}>
+                        <Image
+                          style={styles.img}
+                          source={require('../resources/theme/icons/AC.png')}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  )} */}
+                <View style={[styles.atten]}>
+                  <TouchableOpacity
+                    style={styles.imageView}
+                    onPress={() => online(index)}>
+                    {item.online === 1 ? (
+                      <Image
+                        style={styles.img}
+                        source={require('../resources/theme/icons/PC.png')}
+                      />
+                    ) : (
+                      <Image
+                        style={styles.img}
+                        source={require('../resources/theme/icons/AC.png')}
+                      />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          />
+        )}
+      </>
+
+      <View style={styles.bottomView}>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-evenly',
+            // borderWidth: 1,
+          }}>
+          <TouchableOpacity style={styles.button1} onPress={() => discard()}>
+            <Text style={styles.btntxt}>Discard</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button2} onPress={() => save()}>
+            <Text style={styles.btntxt}>Save</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+};
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  atten: {
+    // flexDirection: 'row',
+    // marginHorizontal: (Dimensions.get('screen').width * 30) / 100,
+    // alignItems: 'flex-end',
+    // left: (Dimensions.get('screen').width * 30) / 100,
+    // flex: 0.5,
+    // borderWidth: 1,
+    // borderColor: 'red',
+    // alignItems: 'center',
+    justifyContent: 'center',
+    width: (Dimensions.get('screen').width * 20) / 100,
+    // backgroundColor: 'red',
+    // justifyContent:'space-evenly',
+    // alignSelf: 'center',
+    // justifyContent: 'center',
+    // flex: 1,
+  },
+  date: {
+    alignSelf: 'flex-start',
+    left: (Dimensions.get('screen').height * 2) / 100,
+    flex: 1,
+    textAlign: 'left',
+    marginTop: 20,
+  },
+  bottomView: {
+    // padding: 2,
+    // position: 'absolute',
+    // zIndex: 1,
+    // bottom: 0,
+    // right: 0,
+    // borderWidth: 1,
+    // borderColor: 'red',
+    width: '100%',
+    height: (Dimensions.get('screen').height * 7.5) / 100,
+    backgroundColor: '#fff',
+  },
+  button1: {
+    width: '30%',
+    backgroundColor: '#adadad',
+    height: 40,
+    alignSelf: 'center',
+    margin: 10,
+    //   padding: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 5,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  button2: {
+    width: '30%',
+    backgroundColor: '#4166f5',
+    height: 40,
+    alignSelf: 'center',
+    margin: 10,
+    //   padding: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 5,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  btntxt: {
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#fff',
+  },
+  header: {
+    height: (Dimensions.get('screen').width * 15) / 100,
+    backgroundColor: '#1e90ff',
+    flexDirection: 'row',
+  },
+  leftarrow: {
+    marginTop: Dimensions.get('screen').width / 50,
+  },
+  ClassAttendance: {
+    flex: 1,
+    textAlignVertical: 'center',
+    fontSize: 24,
+    color: '#fff',
+    marginLeft: (Dimensions.get('screen').width * 2.5) / 100,
+  },
+  dropdownContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    // flexWrap: 'wrap',
+    // borderWidth: 1,
+  },
+  datetxt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    justifyContent: 'flex-start',
+    flex: 1,
+  },
+  grade: {
+    marginHorizontal: 15,
+    marginTop: 5,
+    fontSize: 15,
+    // borderWidth: 1,
+    color: 'grey',
+  },
+  orangeContainer: {
+    backgroundColor: 'orange',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    padding: (Dimensions.get('screen').width * 2.5) / 100,
+  },
+  txt: {
+    fontSize: 16,
+    color: '#fff',
+  },
+  img: {
+    width: 32,
+    height: 32,
+  },
+  imgView: {
+    // width: 10,
+    alignSelf: 'center',
+    left: (Dimensions.get('screen').height * 6) / 100,
+  },
+  imageView: {
+    alignSelf: 'center',
+    alignItems: 'flex-end',
+    // left: (Dimensions.get('screen').width * 2) / 100,
+
+    // flex: 0.2,
+    // flexDirection: 'column-reverse',
+  },
+  imageView2: {
+    alignItems: 'flex-end',
+    alignSelf: 'center',
+    right: (Dimensions.get('screen').width * 5) / 100,
+    flex: 1,
+  },
+});
+export default ClassAttendance;
