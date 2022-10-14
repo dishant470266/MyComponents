@@ -10,7 +10,7 @@ const AlertAndroid = ({ show }) => {
 
   function toggleModal() {
     Linking.openURL(
-      'https://play.google.com/store/apps/details?id=in.securelearning.lil.android.app.questmaster'
+      ''
     );
   }
   return (
@@ -54,11 +54,11 @@ const AlertAndroid = ({ show }) => {
                   style={{ color: 'blue' }}
                   onPress={() =>
                     Linking.openURL(
-                      'https://support.google.com/googleplay/answer/7513003'
+                  ''
                     )
                   }
                 >
-                  https://support.google.com/googleplay/answer/7513003
+                  https://support.google.com
                 </Text>
               </Text>
               <Text style={styles.facingText}>
@@ -107,7 +107,7 @@ import { Button } from 'react-native-elements';
 const Alert = ({ show }: any) => {
   const [more, setMore] = useState(false);
   function toggleModal() {
-    Linking.openURL('https://apps.apple.com/in/app/argus-junior/id1527274791');
+ ');
   }
   return (
     <Modal useNativeDriver isVisible={show}>
@@ -147,10 +147,10 @@ const Alert = ({ show }: any) => {
               <TouchableOpacity
                 style={styles.btn}
                 onPress={() =>
-                  Linking.openURL('https://support.apple.com/en-in/HT207165')
+                  Linking.openURL('https://suppor5')
                 }
               >
-                https://support.apple.com/en-in/HT207165
+                https://support.apple.com
               </TouchableOpacity>
             </Text>
             <Text style={styles.facingText}>
@@ -206,7 +206,7 @@ const InitApp = () => {
       } else {
         try {
           // const { data } = await axios.get(
-          //   `http://itunes.apple.com/lookup?bundleId=${DeviceInfo.getBundleId()}`
+          //()}`
           // );
           // console.log('res--', data?.results[0].version);
           // let appStoreVer = data.results[0].version
